@@ -1,0 +1,99 @@
+Levantamento de Requisitos - Clínica Rainer Moreira	
+		
+	Olá! Para que possamos evoluir o sistema da clínica e deixá-lo do jeito que você deseja, por favor, responda as perguntas abaixo. 	
+	Não se preocupe com termos técnicos, basta responder de forma simples e prática abaixo de cada pergunta.	
+		
+	Por favor, responda cada item de forma simples e direta. Não precisa responder tudo de uma vez - podemos ir evoluindo por etapas!	
+	Muito obrigado!	
+		
+Referência	Pergunta	Resposta
+## 1. Usuários e Permissões (Acesso ao sistema)		
+RF-001	Quais tipos de profissionais existem na clínica? (Ex: médicos, recepcionistas, financeiro, administrador, enfermeiros, técnicos)	médicos, recepcionistas, administrador, enfermeiros e técnicos 
+RF-002	Quais especialidades médicas atuam na clínica? (Ex: Clínico Geral, Neurologista, Ortopedista, etc)	ginecologista, ortomolecular, cardiologia, nutricionista, biomedica e estetica
+RF-003	Para cada especialidade ou função, o que cada um pode ou não pode fazer no sistema? Por exemplo:	Cada setor terá limitações
+RF-004	Pode ver todos os pacientes?	Todos podem ver se fazer alteração ou exclusão.
+RF-005	Pode editar informações dos pacientes?	limitar
+RF-006	Pode agendar consultas para outros médicos?	limitar
+RF-007	Pode acessar informações financeiras?	limitar
+RF-008	Pode ver ou editar estoque de produtos?	limitar
+RF-009	Pode gerar relatórios?	limitar
+RF-010	Pode cadastrar novos usuários?	limitar
+RF-011	Algum profissional pode acessar mais de uma unidade da clínica? Se sim, quais?	médicos, recepcionistas, adm
+RF-012	Existem informações que algum grupo NÃO pode ver de jeito nenhum? (Ex: valores financeiros, prontuários de outros médicos, etc)	Sim, gostariamos que fosse limitado e iriamos liberando as permissões.
+## 2. Pacientes		
+RF-013	Quais dados são obrigatórios no cadastro de pacientes? (Ex: nome, telefone, endereço, convênio, etc)	Nome, telefone, cpf, email, cep, rg, foto, data de nascimento, sexo, profissão e contato de emergencia
+RF-014	Precisa armazenar foto do paciente?	sim
+RF-015	Como funciona o atendimento por convênio? Há diferentes tipos?	Não aceitamos convenio
+RF-016	Deseja controlar dependentes (família) dos pacientes?	Não entendi
+RF-017	Precisa de alertas especiais? (Ex: paciente alérgico, diabético, hipertenso)	sim
+RF-018	Como controlar o histórico médico completo do paciente?	anamnese
+RF-019	Precisa anexar documentos (RG, CPF, carteirinha do convênio, exames)?	sim
+RF-020	Deseja controlar dados de emergência (contato em caso de urgência)?	sim
+## 3. Agendamentos		
+RF-021	Quais tipos de agendamentos existem? (Ex: consulta, retorno, procedimento, exame)	consulta, visita para exame, retorno, procedimento , coleta de exame, exame 
+RF-022	Qual a duração padrão de cada tipo de atendimento?	Individualizados
+RF-023	Como funciona o sistema de confirmação de consultas?	Mensagem via WhatsApp com link para confirmação
+RF-024	Precisa de lista de espera para cancelamentos?	sim
+RF-025	Como controlar encaixes e urgências?	com opção de encaixe no agendamento
+RF-026	Deseja bloquear horários específicos? (Ex: almoço, reuniões, manutenção)	sim
+RF-027	Precisa agendar para salas ou equipamentos específicos?	sim
+RF-028	Como funciona o reagendamento de consultas?	editando o status do agendamento.
+RF-029	Deseja limitar quantas consultas um paciente pode agendar por período?	não
+## 4. Prontuário Eletrônico		
+RF-030	Quais informações devem constar no prontuário?	Historico do paciente, anamnese , evolução, receitas , atestados , laudos, pedidos e resultados de exames, solicitações, anexos, dietas, anotações, galeria.
+RF-031	Precisa de modelos de anamnese diferentes por especialidade?	sim
+RF-032	Como funciona a prescrição de medicamentos?	não entendi
+RF-033	Precisa controlar receitas médicas (quantidade, validade)?	não 
+RF-034	Deseja anexar exames, laudos e imagens ao prontuário?	sim
+RF-035	Como funciona a evolução do paciente (anotações por consulta)?	sim, duplicando a evoluação com as novas orientações da nova consulta.
+RF-036	Precisa de assinatura digital nos documentos?	sim
+RF-037	Quem pode ver ou editar cada parte do prontuário?	precisamos de permissão para controlar a liberação dessa parte.
+## 5. Financeiro		
+RF-038	Como funciona o faturamento por convênio?	Não temos
+RF-039	Precisa controlar glosas e devoluções de convênios?	Não
+RF-040	Como são os pagamentos particulares? (À vista, parcelado, cartão)	consultas (dinheiro ou pix) os demais aceitamos cartão parcelado, a vista 
+RF-041	Precisa de controle de comissões para médicos?	Sim. como preescritor e executor
+RF-042	Como funciona o controle de contas a pagar da clínica?	Cadastro de contas manualmente.
+RF-043	Deseja relatórios de lucratividade por médico ou especialidade?	sim.
+RF-044	Precisa de integração com sistemas bancários?	sim.
+RF-045	Como controlar inadimplência de pacientes?	Pendencias com alertas ao acessar o cadastro do paciente.
+## 6. Estoque e Produtos		
+RF-046	Quais categorias de produtos existem? (Ex: medicamentos, materiais, equipamentos)	Medicamentos, materiaos hospitalares, cosmeticos, Limpeza, escritorio, equipamentos.
+RF-047	Precisa controlar lotes e validades?	sim.
+RF-048	Como funciona a entrada e saída de produtos?	Entrada manualmente e saida assim que finaliza o atendimento.
+RF-049	Deseja controlar fornecedores e compras?	sim.
+RF-050	Precisa de relatórios de consumo por médico ou procedimento?	sim.
+RF-051	Como definir estoque mínimo para cada produto?	Pela quantidade
+RF-052	Deseja controlar custos e margens de lucro?	sim.
+## 7. Relatórios e Dashboards		
+RF-053	Quais indicadores são importantes para acompanhar diariamente?	pacientes cancelados, confirmados, atendidos, aniversariantes
+RF-054	Precisa de relatórios para órgãos fiscalizadores (CRM, Vigilância Sanitária)?	não entendi
+RF-055	Deseja acompanhar produtividade por médico?	sim
+RF-056	Precisa de relatórios financeiros mensais/anuais?	sim
+RF-057	Como acompanhar satisfação dos pacientes?	avaliação no aplicativo
+RF-058	Deseja relatórios de marketing (origem dos pacientes)?	sim
+## 8. Comunicação e Notificações		
+RF-059	Como se comunicar com os pacientes? (WhatsApp, SMS, E-mail, ligação)	whatsapp e ligação
+RF-060	Precisa de lembretes automáticos de consultas?	sim
+RF-061	Deseja campanhas de marketing (aniversários, check-ups)?	sim
+RF-062	Como notificar a equipe sobre urgências ou alterações?	chat interno
+RF-063	Precisa de chat interno entre funcionários?	sim
+## 9. Integrações e Tecnologia		
+RF-064	Usa algum sistema atualmente que precisa continuar?	sim
+RF-065	Precisa integrar com laboratórios de exames?	sim
+RF-066	Deseja integração com cartões de crédito ou PIX?	não
+RF-067	Precisa de backup automático dos dados?	sim
+RF-068	Qual a importância de acessar o sistema pelo celular?	média
+RF-069	Tem alguma preocupação específica com segurança dos dados?	sim, prontuario do paciente.
+## 10. Experiência do Usuário		
+RF-070	Quais são as maiores dificuldades da equipe com sistemas?	baixa da sessão do pacote do paciente
+RF-071	Prefere muitas telas simples ou poucas telas completas?	poucas completas
+RF-072	A equipe está acostumada com tecnologia?	sim
+RF-073	Precisa de treinamento para usar o sistema?	sim
+RF-074	Alguma funcionalidade que sempre gera confusão?	estoque
+## 11. Crescimento e Futuro		
+RF-075	Planeja abrir novas unidades?	sim
+RF-076	Pretende contratar mais médicos ou especialidades?	sim
+RF-077	Deseja vender produtos para pacientes?	sim
+RF-078	Tem planos de telemedicina?	sim
+RF-079	Gostaria de um aplicativo para pacientes agendarem consultas?	sim

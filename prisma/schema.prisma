@@ -1,0 +1,560 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model PatientDocument {
+  id           String   @id @default(uuid())
+  patientId    String
+  filename     String
+  originalname String
+  mimetype     String
+  size         Int
+  uploadedAt   DateTime @default(now())
+  data         Bytes
+  patient      Patient  @relation(fields: [patientId], references: [id])
+
+  @@map("patient_documents")
+}
+
+model User {
+  id                    String               @id @default(uuid())
+  nome                  String
+  email                 String               @unique
+  senha                 String
+  role                  UserRole             @default(RECEPCIONISTA)
+  unidade               Unidade
+  cargo                 String?
+  telefone              String?
+  ativo                 Boolean              @default(true)
+  ultimoAcesso          DateTime?
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
+  especialidade         EspecialidadeMedica?
+  unidadesAcesso        Unidade[]
+  logsAcesso            AccessLog[]
+  agendamentosCriados   Appointment[]        @relation("AgendamentoCriadoPor")
+  agendamentosMedico    Appointment[]        @relation("AgendamentoMedico")
+  consultasRealizadas   Consultation[]       @relation("ConsultaRealizadaPor")
+  movimentacoesEstoque  StockMovement[]      @relation("MovimentacaoCriadaPor")
+  transacoesFinanceiras Transaction[]        @relation("TransacaoCriadaPor")
+  permissoes            UserPermission[]
+
+  @@map("users")
+}
+
+model RolePermission {
+  id        String        @id @default(uuid())
+  role      UserRole
+  permissao PermissaoTipo
+  unidade   Unidade
+  ativo     Boolean       @default(true)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@unique([role, permissao, unidade])
+  @@map("role_permissions")
+}
+
+model UserPermission {
+  id        String        @id @default(uuid())
+  userId    String
+  permissao PermissaoTipo
+  unidade   Unidade
+  ativo     Boolean       @default(true)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, permissao, unidade])
+  @@map("user_permissions")
+}
+
+model AccessLog {
+  id         String   @id @default(uuid())
+  userId     String
+  action     String
+  resource   String
+  resourceId String?
+  unidade    Unidade
+  ipAddress  String?
+  userAgent  String?
+  success    Boolean  @default(true)
+  details    Json?
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id])
+
+  @@index([userId, createdAt])
+  @@index([resource, createdAt])
+  @@map("access_logs")
+}
+
+model Patient {
+  id                        String             @id @default(uuid())
+  nome                      String
+  nomeSocial                String?
+  nascimento                DateTime
+  cpf                       String             @unique
+  rg                        String?
+  sexo                      SexoPaciente?
+  foto                      String?
+  prontuario                String             @unique
+  altura                    Float?
+  peso                      Float?
+  imc                       Float?
+  telefone                  String
+  telefone2                 String?
+  celular                   String?
+  email                     String?            @unique
+  cep                       String?
+  endereco                  String?
+  numero                    String?
+  complemento               String?
+  bairro                    String?
+  cidade                    String?
+  estado                    String?
+  pais                      String?
+  profissao                 String?
+  naturalidade              String?
+  nacionalidade             String?
+  origem                    String?
+  religiao                  String?
+  corPele                   String?
+  escolaridade              String?
+  estadoCivil               String?
+  cns                       String?
+  prioridade                String?
+  corIdentificacao          String?
+  estrangeiro               Boolean            @default(false)
+  observacoes               String?
+  status                    StatusPaciente     @default(ATIVO)
+  unidade                   Unidade
+  createdAt                 DateTime           @default(now())
+  updatedAt                 DateTime           @updatedAt
+  contatoEmergenciaNome     String?
+  contatoEmergenciaRelacao  String?
+  contatoEmergenciaTelefone String?
+  alergias                  String?
+  cirurgiasAnteriores       String?
+  condicoesMedicas          String?
+  historicoFamiliar         String?
+  medicamentosUso           String?
+  observacoesMedicas        String?
+  agendamentos              Appointment[]
+  consultas                 Consultation[]
+  documents                 PatientDocument[]
+  convenios                 PatientInsurance[]
+  parentes                  PatientRelative[]
+  transacoes                Transaction[]
+
+  @@map("patients")
+}
+
+model PatientInsurance {
+  id               String    @id @default(uuid())
+  patientId        String
+  convenio         String
+  plano            String?
+  matricula        String?
+  tokenCarteirinha String?
+  validade         DateTime?
+  ativo            Boolean   @default(true)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  patient          Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@map("patient_insurances")
+}
+
+model PatientRelative {
+  id                  String             @id @default(uuid())
+  patientId           String
+  nome                String
+  telefone            String?
+  email               String?
+  endereco            String?
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+  cep                 String?
+  cidade              String?
+  cpf                 String?
+  estado              String?
+  isContatoEmergencia Boolean            @default(false)
+  isDependente        Boolean            @default(false)
+  isResponsavel       Boolean            @default(false)
+  nascimento          DateTime?
+  observacoes         String?
+  profissao           String?
+  rg                  String?
+  parentesco          TipoRelacionamento
+  patient             Patient            @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@map("patient_relatives")
+}
+
+model Product {
+  id            String          @id @default(uuid())
+  nome          String
+  descricao     String?
+  categoria     String?
+  codigoBarras  String?
+  fabricante    String?
+  estoqueMinimo Int             @default(0)
+  estoqueAtual  Int             @default(0)
+  localizacao   String?
+  precoCusto    Float?
+  precoVenda    Float?
+  ativo         Boolean         @default(true)
+  unidade       Unidade
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  lotes         ProductBatch[]
+  movimentacoes StockMovement[]
+
+  @@index([unidade, ativo])
+  @@index([estoqueAtual])
+  @@map("products")
+}
+
+model ProductBatch {
+  id            String          @id @default(uuid())
+  productId     String
+  lote          String
+  validade      DateTime?
+  quantidade    Int
+  precoCusto    Float?
+  fornecedor    String?
+  ativo         Boolean         @default(true)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  product       Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  movimentacoes StockMovement[]
+
+  @@unique([productId, lote])
+  @@index([validade])
+  @@map("product_batches")
+}
+
+model StockMovement {
+  id          String           @id @default(uuid())
+  productId   String
+  batchId     String?
+  tipo        TipoMovimentacao
+  quantidade  Int
+  motivo      String?
+  observacoes String?
+  criadoPorId String
+  unidade     Unidade
+  createdAt   DateTime         @default(now())
+  batch       ProductBatch?    @relation(fields: [batchId], references: [id])
+  criadoPor   User             @relation("MovimentacaoCriadaPor", fields: [criadoPorId], references: [id])
+  product     Product          @relation(fields: [productId], references: [id])
+
+  @@index([productId, createdAt])
+  @@index([unidade, createdAt])
+  @@map("stock_movements")
+}
+
+model Procedure {
+  id             String         @id @default(uuid())
+  nome           String
+  descricao      String?
+  categoria      String?
+  duracao        Int?
+  valor          Float?
+  especialidades String[]
+  ativo          Boolean        @default(true)
+  unidade        Unidade
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  agendamentos   Appointment[]
+  consultas      Consultation[]
+
+  @@index([unidade, ativo])
+  @@map("procedures")
+}
+
+model Appointment {
+  id                 String            @id @default(uuid())
+  patientId          String
+  procedureId        String
+  medicoId           String?
+  dataHora           DateTime
+  duracao            Int?
+  observacoes        String?
+  tipoAgendamento    String?
+  status             StatusAgendamento @default(AGENDADO)
+  motivoCancelamento String?
+  confirmado         Boolean           @default(false)
+  dataConfirmacao    DateTime?
+  criadoPorId        String
+  unidade            Unidade
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  criadoPor          User              @relation("AgendamentoCriadoPor", fields: [criadoPorId], references: [id])
+  medico             User?             @relation("AgendamentoMedico", fields: [medicoId], references: [id])
+  patient            Patient           @relation(fields: [patientId], references: [id])
+  procedure          Procedure         @relation(fields: [procedureId], references: [id])
+  consulta           Consultation?
+
+  @@index([unidade, status])
+  @@index([dataHora])
+  @@index([patientId])
+  @@index([medicoId])
+  @@map("appointments")
+}
+
+model Consultation {
+  id                  String              @id @default(uuid())
+  appointmentId       String?             @unique
+  patientId           String
+  procedureId         String
+  medicoId            String
+  dataConsulta        DateTime
+  queixaPrincipal     String?
+  historiaDoenca      String?
+  exameFisico         String?
+  hipoteseDiagnostica String?
+  conduta             String?
+  observacoes         String?
+  status              StatusConsulta      @default(AGENDADA)
+  unidade             Unidade
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  anamneses           AnamnesisResponse[]
+  appointment         Appointment?        @relation(fields: [appointmentId], references: [id])
+  medico              User                @relation("ConsultaRealizadaPor", fields: [medicoId], references: [id])
+  patient             Patient             @relation(fields: [patientId], references: [id])
+  procedure           Procedure           @relation(fields: [procedureId], references: [id])
+  receitas            Recipe[]
+
+  @@index([unidade])
+  @@index([dataConsulta])
+  @@index([patientId])
+  @@index([medicoId])
+  @@map("consultations")
+}
+
+model RecipeTemplate {
+  id            String   @id @default(uuid())
+  nome          String
+  template      String
+  especialidade String?
+  ativo         Boolean  @default(true)
+  unidade       Unidade
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  receitas      Recipe[]
+
+  @@index([unidade, ativo])
+  @@map("recipe_templates")
+}
+
+model Recipe {
+  id             String          @id @default(uuid())
+  consultationId String
+  templateId     String?
+  conteudo       String
+  observacoes    String?
+  impressa       Boolean         @default(false)
+  dataImpressao  DateTime?
+  unidade        Unidade
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  consultation   Consultation    @relation(fields: [consultationId], references: [id])
+  template       RecipeTemplate? @relation(fields: [templateId], references: [id])
+
+  @@index([consultationId])
+  @@map("recipes")
+}
+
+model AnamnesisForm {
+  id            String              @id @default(uuid())
+  nome          String
+  descricao     String?
+  especialidade String?
+  campos        Json
+  ativo         Boolean             @default(true)
+  unidade       Unidade
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  respostas     AnamnesisResponse[]
+
+  @@index([unidade, ativo])
+  @@map("anamnesis_forms")
+}
+
+model AnamnesisResponse {
+  id             String        @id @default(uuid())
+  formId         String
+  consultationId String
+  respostas      Json
+  unidade        Unidade
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  consultation   Consultation  @relation(fields: [consultationId], references: [id])
+  form           AnamnesisForm @relation(fields: [formId], references: [id])
+
+  @@index([consultationId])
+  @@map("anamnesis_responses")
+}
+
+model Transaction {
+  id             String           @id @default(uuid())
+  patientId      String?
+  descricao      String
+  tipo           TipoTransacao
+  valor          Float
+  dataVencimento DateTime
+  dataPagamento  DateTime?
+  status         StatusFinanceiro @default(PENDENTE)
+  observacoes    String?
+  criadoPorId    String
+  unidade        Unidade
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  criadoPor      User             @relation("TransacaoCriadaPor", fields: [criadoPorId], references: [id])
+  patient        Patient?         @relation(fields: [patientId], references: [id])
+
+  @@index([unidade, status])
+  @@index([dataVencimento])
+  @@index([patientId])
+  @@map("transactions")
+}
+
+enum TipoRelacionamento {
+  PAI
+  MAE
+  RESPONSAVEL_LEGAL
+  CONJUGE
+  FILHO
+  FILHA
+  IRMAO
+  IRMA
+  AVO
+  AVA
+  TIO
+  TIA
+  PRIMO
+  PRIMA
+  AMIGO
+  CUIDADOR
+  OUTRO
+}
+
+enum UserRole {
+  ADMIN
+  MEDICO
+  RECEPCIONISTA
+  ESTOQUISTA
+  FINANCEIRO
+  NUTRICIONISTA
+  TECNICO_ENFERMAGEM
+  RECEPCAO
+  ESTETICA
+  BIOMEDICO
+  ADMINISTRATIVO
+}
+
+enum EspecialidadeMedica {
+  GINECOLOGISTA
+  ORTOMOLECULAR
+  CARDIOLOGIA
+  NUTRICIONISTA
+  BIOMEDICA
+  ESTETICA
+}
+
+enum PermissaoTipo {
+  PACIENTES_VISUALIZAR
+  PACIENTES_CRIAR
+  PACIENTES_EDITAR_BASICO
+  PACIENTES_EDITAR_COMPLETO
+  PACIENTES_EXCLUIR
+  PACIENTES_PRONTUARIO_VISUALIZAR
+  PACIENTES_PRONTUARIO_EDITAR
+  AGENDAMENTOS_VISUALIZAR
+  AGENDAMENTOS_CRIAR
+  AGENDAMENTOS_EDITAR
+  AGENDAMENTOS_CANCELAR
+  AGENDAMENTOS_REAGENDAR
+  AGENDAMENTOS_OUTROS_MEDICOS
+  FINANCEIRO_VISUALIZAR
+  FINANCEIRO_CRIAR
+  FINANCEIRO_EDITAR
+  FINANCEIRO_RELATORIOS
+  FINANCEIRO_EXCLUIR
+  ESTOQUE_VISUALIZAR
+  ESTOQUE_CRIAR
+  ESTOQUE_EDITAR
+  ESTOQUE_MOVIMENTAR
+  ESTOQUE_RELATORIOS
+  USUARIOS_VISUALIZAR
+  USUARIOS_CRIAR
+  USUARIOS_EDITAR
+  USUARIOS_EXCLUIR
+  RELATORIOS_GERAL
+  RELATORIOS_FINANCEIRO
+  RELATORIOS_ESTOQUE
+  RELATORIOS_PRODUTIVIDADE
+  SISTEMA_CONFIGURAR
+  SISTEMA_AUDITORIA
+  SISTEMA_BACKUP
+}
+
+enum Unidade {
+  BARRA
+  TIJUCA
+}
+
+enum StatusPaciente {
+  ATIVO
+  INATIVO
+  BLOQUEADO
+}
+
+enum SexoPaciente {
+  MASCULINO
+  FEMININO
+  OUTRO
+  NAO_INFORMAR
+}
+
+enum TipoMovimentacao {
+  ENTRADA
+  SAIDA
+  AJUSTE
+  TRANSFERENCIA
+}
+
+enum StatusAgendamento {
+  AGENDADO
+  CONFIRMADO
+  EM_ATENDIMENTO
+  CONCLUIDO
+  CANCELADO
+  FALTOU
+}
+
+enum StatusConsulta {
+  AGENDADA
+  EM_ANDAMENTO
+  CONCLUIDA
+  CANCELADA
+}
+
+enum TipoTransacao {
+  RECEITA
+  DESPESA
+}
+
+enum StatusFinanceiro {
+  PENDENTE
+  PAGO
+  VENCIDO
+  CANCELADO
+}

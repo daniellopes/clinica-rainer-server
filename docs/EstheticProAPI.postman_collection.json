@@ -1,0 +1,88 @@
+{
+  "info": {
+    "_postman_id": "estheticproapi-collection-1",
+    "name": "EstheticProAPI",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Login",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"admin@estheticpro.com\",\n  \"senha\": \"admin123\",\n  \"unidade\": \"MATRIZ\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:3333/api/auth/login",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3333",
+          "path": ["api", "auth", "login"]
+        }
+      }
+    },
+    {
+      "name": "Register",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nome\": \"Novo Usuário\",\n  \"email\": \"novo@exemplo.com\",\n  \"senha\": \"abcdef\",\n  \"unidade\": \"MATRIZ\",\n  \"role\": \"RECEPCIONISTA\",\n  \"cargo\": \"Recepcionista\",\n  \"telefone\": \"(11) 99999-9999\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:3333/api/auth/register",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3333",
+          "path": ["api", "auth", "register"]
+        }
+      }
+    },
+    {
+      "name": "Listar Usuários",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}" },
+          { "key": "x-unidade", "value": "MATRIZ" }
+        ],
+        "url": {
+          "raw": "http://localhost:3333/api/users",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3333",
+          "path": ["api", "users"]
+        }
+      }
+    },
+    {
+      "name": "Criar Usuário",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}" },
+          { "key": "x-unidade", "value": "MATRIZ" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nome\": \"Outro Usuário\",\n  \"email\": \"outro@exemplo.com\",\n  \"senha\": \"123456\",\n  \"unidade\": \"MATRIZ\",\n  \"role\": \"RECEPCIONISTA\",\n  \"cargo\": \"Recepcionista\",\n  \"telefone\": \"(11) 98888-8888\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:3333/api/users",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3333",
+          "path": ["api", "users"]
+        }
+      }
+    }
+  ]
+}

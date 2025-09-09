@@ -1,0 +1,240 @@
+📋 DÚVIDAS PARA O CLIENTE - CLÍNICA RAINER MOREIRA
+=======================================================
+
+Olá! Com base nas suas respostas, preciso esclarecer alguns pontos específicos para garantir que o sistema fique exatamente como vocês precisam:
+
+## 🔒 1. PERMISSÕES E ACESSO (CRÍTICO)
+
+RF-003/012: Você mencionou "limitar" em várias permissões. Preciso saber EXATAMENTE o que cada grupo pode fazer:
+
+### ADMINISTRADOR:
+- Pode fazer tudo no sistema? (cadastrar usuários, ver financeiro, editar estoque, etc.)
+   Resposta: Sim
+
+### MÉDICOS:
+- Podem ver pacientes de outros médicos?
+	Resposta: sim
+- Podem editar informações básicas dos pacientes (telefone, endereço)?
+	Resposta: não
+- Podem agendar consultas para outros médicos?
+	Resposta: não
+- Podem ver valores financeiros (preços, faturamento)?
+	Resposta: não
+- Podem ver/editar estoque de medicamentos?
+	Resposta: não
+- Podem gerar relatórios financeiros?
+	Resposta: não
+
+### RECEPCIONISTAS:
+- Podem ver prontuários médicos completos?
+	especificar mais o que é prontuário e o que é anamnésia.
+- Podem editar informações dos pacientes?
+	sim cadastro
+- Podem ver valores financeiros?
+	sim (não relatórios)
+- Podem fazer baixa no estoque?
+	somente se o paciente utilizar o produto
+
+
+### ENFERMEIROS/TÉCNICOS:
+- Podem ver prontuários?
+	só receita
+- Podem fazer anotações no prontuário?
+	no "registro de atendimento" ela pode dizer como está
+- Podem agendar consultas?
+	não
+- Podem fazer baixa no estoque?
+a baixa vai ser sempre automático, sempre ao executar um procedimento irá dar baixa no estoque. apenas administrador poderá fazer baixa manualmente do estoque.
+
+## 👥 2. PACIENTES E DEPENDENTES
+
+RF-016: Sobre "controlar dependentes" - você disse "não entendi". 
+- Pacientes menores de idade vão ao consultório? 
+	Sim "Planejar criar um grupo para todos os membros da família"
+- Se sim, precisa cadastrar os pais/responsáveis?
+	sim por que são responsáveis financeiros tbm
+- Um responsável pode agendar para vários filhos?
+	Sim
+
+## ⏰ 3. AGENDAMENTOS - DURAÇÕES
+
+RF-022: Você disse "individualizados". Preciso de exemplos práticos:
+- Consulta ginecologia: quantos minutos?
+	1 hora
+- Procedimento estético: quantos minutos?
+	depende do procedimento
+- Retorno: quantos minutos?
+	não tem retorno
+- Exame: quantos minutos?
+	30 minutos em média
+
+RF-028: Sobre reagendamento "editando status" - isso significa:
+- Qualquer pessoa pode reagendar qualquer consulta?
+	apenas a recepção pode reagendar e o adm
+- Há limite de tempo para reagendar (ex: 24h antes)?
+	uma nova consulta é a cada 60 dias. 
+	medicação> 15 dias ebg, 30 dias vitamina D, 5 meses implantes
+	
+- Paciente pode reagendar pelo WhatsApp/sistema?
+	não
+
+## 💊 4. PRESCRIÇÕES E MEDICAMENTOS
+
+RF-032: Você disse "não entendi" sobre prescrição de medicamentos.
+- Médicos prescrevem medicamentos para os pacientes?
+	Sim
+- Se sim, essas receitas ficam salvas no sistema?
+	sim por ordem de data e precisa ter opção de duplicar a receita e poder editar
+- Precisa imprimir receitas com layout específico?
+	Sim
+
+RF-033: Sobre controle de receitas, você disse "não".
+- Significa que não precisa controlar quantos comprimidos foram prescritos?
+- Não precisa controlar validade das receitas?
+	60 dias
+
+## 🏥 5. PRONTUÁRIO ELETRÔNICO
+
+RF-031: Sobre modelos de anamnese diferentes por especialidade:
+- Quantos modelos diferentes precisam? (um para cada especialidade?)
+	medico, nutricionista, ginecológico, biomédico, nutricional gestante
+- Quem vai criar esses modelos? (médicos, administrador?)
+	adm
+- Campos obrigatórios são os mesmos em todas as especialidades?
+	
+
+RF-035: Sobre evolução duplicando com novas orientações:
+- O médico copia a evolução anterior e edita?
+	sim, ele poderá duplicar e dar continuidade a partir da ultima
+- Ou o sistema duplica automaticamente?
+	Não, mas precisa ter uns menu de compartilhamento
+- Evoluções antigas ficam visíveis ou só a atual?
+	Fica visivel
+
+RF-037: Sobre permissões do prontuário:
+- Médico só vê prontuários dos próprios pacientes?
+	Sim, de todas as especialidades
+- Recepcionista pode ver prontuários?
+	
+- Enfermeiro pode fazer anotações no prontuário?
+
+## 💰 6. FINANCEIRO - COMISSÕES
+
+RF-041: Sobre comissões "prescritor e executor":
+- O que exatamente é "prescritor"? (quem prescreve o procedimento?)
+	A pessoa que está receitando o procedimento ou a medicação
+- O que é "executor"? (quem executa o procedimento?)
+	Executor é a pessoa que faz
+- São percentuais fixos ou variam por procedimento?
+	variavel
+- Como calcular: sobre o valor bruto ou líquido?
+	Comissão em comição em cima do liquido.
+
+RF-042: Contas a pagar "manualmente":
+- Quem pode cadastrar contas a pagar?
+	sangria recepção. contas a pagar apenas o financeiro
+- Precisa de aprovação para pagamento?
+	depende do desconto. atualmente é automático até 25% acima disso só com altorização
+- Categorias de despesas? (aluguel, salários, fornecedores, etc.)
+	insumo, medicamento, papelaria, mercado, transporte, despesas fixas
+
+## 🏢 7. INTEGRAÇÃO COM SISTEMA ATUAL
+
+RF-064: Você disse que usa um sistema atualmente:
+- Qual o nome do sistema atual?
+	suporte clinic
+- Que dados precisam ser migrados? (pacientes, agendamentos, financeiro?)
+	tudo menos estoque
+- O sistema atual vai parar de funcionar ou vai rodar junto?
+	vai parar
+
+## 🔬 8. LABORATÓRIOS E EXAMES
+
+RF-065: Sobre integração com laboratórios:
+- Com quais laboratórios trabalham?
+	BD e Hermes Pargine
+- Como funciona hoje? (sistema online, email, telefone?)
+	pelo telefone / whatsap / site
+- Resultados chegam em qual formato? (PDF, sistema online?)
+	sistema online e pdf - 	"o pargine disponibiliza uma api"
+
+## 📱 9. APLICATIVO PARA PACIENTES
+
+RF-079: Sobre aplicativo para agendamentos:
+- Paciente vai agendar sozinho ou só ver agendamentos?
+	Por enquanto apenas visualizar
+- Precisa de cadastro/login para pacientes?
+	Sim (para o aplicativo)
+- Que informações o paciente pode ver? (prontuário, exames, financeiro?)
+	tudo referente a ele
+	e pode alterar informações básicas de cadastro
+	o paciente não pode excluir nada do aplicativo
+	o paciente pode incluir exames e comprovantes de pagamentos
+
+## 📊 10. RELATÓRIOS ESPECÍFICOS
+
+RF-054: Você disse "não entendi" sobre relatórios para órgãos fiscalizadores:
+- CRM pede algum tipo de relatório da clínica?
+	Não
+- Vigilância Sanitária faz inspeções? Precisa de relatórios de estoque/procedimentos?
+	Faz inspeções. 
+
+RF-057: Sobre avaliação no aplicativo:
+- Escala de 1 a 5 estrelas?
+	10 estrelas
+- Comentários opcionais ou obrigatórios?
+	Opcional
+- Quem pode ver as avaliações?
+	Apenas administradores
+
+## ⚠️ 11. ESTOQUE - DETALHES IMPORTANTES
+
+RF-070: Você mencionou dificuldade com "baixa da sessão do pacote do paciente":
+- O que exatamente significa isso?
+	dar baixa manualmente deu muito problema
+	precisa que a baixa seja automaticamente
+	por exemplo: se a enfermeira não der baixa no procedimento a baixa no estoque não pode ser efetuada.
+	precisa ser por passos:
+	1 recepção verifica medicação e agenda na agenda da enfermeira e coloca eles em sala de espera
+	2 a enfermagem verifica a medicação do paciente, verificar se a medicação está correta e ela só executa depois que estiver tudo ok. enquanto o paciente estiver sendo atendido não 	pode dar baixa, só quando a enfermeira confirmar
+	depois desses passos está ok para dar baixa
+- Vocês vendem pacotes de procedimentos?
+	sim, analisar  questões dos procedimento / produto. 
+- Como controlar quantas sessões o paciente já usou?
+	pela baixa no estoque / a recepção deve ser capaz de orçar quantas sessões terão o paciente
+
+RF-074: Sobre estoque gerar confusão:
+- Qual a maior dificuldade hoje com controle de estoque?
+- Quem faz a baixa no estoque atualmente?
+- Produtos são utilizados durante a consulta ou vendidos separado?
+
+## 🔐 12. SEGURANÇA - LGPD
+
+RF-069: Sobre segurança do prontuário:
+- Precisa de termo de consentimento LGPD para pacientes?
+	Sim, já existem alguns termos
+- Log de quem acessou cada prontuário?
+	Sim em agendamento também
+- Tempo de retenção dos dados? (pacientes que não voltam há X anos)
+	deixar para sempre
+
+
+=======================================================
+
+
+
+
+
+permissões:
+podemos utilizar os grupos prédefinidos, porém também querem selecionar as permissões especificas para um usuário ou as permissões do grupo + algumas.
+
+médicos, nutricionista, tec enfermagem, recepção, estética, biomédico, administrativo, financeiro.
+
+
+Criar uma aba que mostre em média o tempo que dura uma consulta ou procedimento para preenchimento do espaço de consulta
+
+
+o mesmo banco de dados será utilizado nas duas clinicas, o histórico ficará disponível para as duas unidades
+estoque, financeiro relatórios, relatórios por unidades. os administradores poderão ver ambos os históricos.
+
+Questão de estoque a baixa pode ser por sessão, ou por pacote.
