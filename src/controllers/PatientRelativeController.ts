@@ -1,13 +1,13 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { AppError } from '../middlewares/errorHandler';
-import { 
-  createPatientRelativeSchema, 
-  updatePatientRelativeSchema, 
+import {
+  createPatientRelativeSchema,
+  updatePatientRelativeSchema,
   listPatientRelativesSchema,
   CreatePatientRelativeData,
   UpdatePatientRelativeData,
-  ListPatientRelativesQuery 
+  ListPatientRelativesQuery,
 } from '../schemas/patient-relative.schema';
 
 const prisma = new PrismaClient();
@@ -22,7 +22,7 @@ export class PatientRelativeController {
 
       // Construir filtros
       const where: any = { patientId: id };
-      
+
       if (tipo === 'dependentes') {
         where.isDependente = true;
       } else if (tipo === 'responsaveis') {
@@ -38,11 +38,11 @@ export class PatientRelativeController {
           take: limit,
           include: {
             patient: {
-              select: { nome: true, id: true }
-            }
-          }
+              select: { nome: true, id: true },
+            },
+          },
         }),
-        prisma.patientRelative.count({ where })
+        prisma.patientRelative.count({ where }),
       ]);
 
       const totalPages = Math.ceil(totalCount / limit);
@@ -56,11 +56,14 @@ export class PatientRelativeController {
           totalCount,
           totalPages,
           hasNext: page < totalPages,
-          hasPrev: page > 1
-        }
+          hasPrev: page > 1,
+        },
       });
     } catch (error: any) {
-      throw new AppError('Erro ao listar dependentes/responsáveis: ' + error.message, 500);
+      throw new AppError(
+        'Erro ao listar dependentes/responsáveis: ' + error.message,
+        500,
+      );
     }
   }
 
@@ -70,15 +73,15 @@ export class PatientRelativeController {
       const { id, relativeId } = req.params;
 
       const relative = await prisma.patientRelative.findFirst({
-        where: { 
+        where: {
           id: relativeId,
-          patientId: id 
+          patientId: id,
         },
         include: {
           patient: {
-            select: { nome: true, id: true }
-          }
-        }
+            select: { nome: true, id: true },
+          },
+        },
       });
 
       if (!relative) {
@@ -87,10 +90,13 @@ export class PatientRelativeController {
 
       return res.status(200).json({
         success: true,
-        data: relative
+        data: relative,
       });
     } catch (error: any) {
-      throw new AppError('Erro ao buscar dependente/responsável: ' + error.message, 500);
+      throw new AppError(
+        'Erro ao buscar dependente/responsável: ' + error.message,
+        500,
+      );
     }
   }
 
@@ -117,18 +123,21 @@ export class PatientRelativeController {
         data: relativeData,
         include: {
           patient: {
-            select: { nome: true, id: true }
-          }
-        }
+            select: { nome: true, id: true },
+          },
+        },
       });
 
       return res.status(201).json({
         success: true,
         data: relative,
-        message: 'Dependente/responsável criado com sucesso'
+        message: 'Dependente/responsável criado com sucesso',
       });
     } catch (error: any) {
-      throw new AppError('Erro ao criar dependente/responsável: ' + error.message, 500);
+      throw new AppError(
+        'Erro ao criar dependente/responsável: ' + error.message,
+        500,
+      );
     }
   }
 
@@ -140,10 +149,10 @@ export class PatientRelativeController {
 
       // Verificar se existe
       const existingRelative = await prisma.patientRelative.findFirst({
-        where: { 
+        where: {
           id: relativeId,
-          patientId: id 
-        }
+          patientId: id,
+        },
       });
 
       if (!existingRelative) {
@@ -162,18 +171,21 @@ export class PatientRelativeController {
         data: relativeData,
         include: {
           patient: {
-            select: { nome: true, id: true }
-          }
-        }
+            select: { nome: true, id: true },
+          },
+        },
       });
 
       return res.status(200).json({
         success: true,
         data: relative,
-        message: 'Dependente/responsável atualizado com sucesso'
+        message: 'Dependente/responsável atualizado com sucesso',
       });
     } catch (error: any) {
-      throw new AppError('Erro ao atualizar dependente/responsável: ' + error.message, 500);
+      throw new AppError(
+        'Erro ao atualizar dependente/responsável: ' + error.message,
+        500,
+      );
     }
   }
 
@@ -184,10 +196,10 @@ export class PatientRelativeController {
 
       // Verificar se existe
       const existingRelative = await prisma.patientRelative.findFirst({
-        where: { 
+        where: {
           id: relativeId,
-          patientId: id 
-        }
+          patientId: id,
+        },
       });
 
       if (!existingRelative) {
@@ -196,15 +208,18 @@ export class PatientRelativeController {
 
       // Deletar
       await prisma.patientRelative.delete({
-        where: { id: relativeId }
+        where: { id: relativeId },
       });
 
       return res.status(200).json({
         success: true,
-        message: 'Dependente/responsável removido com sucesso'
+        message: 'Dependente/responsável removido com sucesso',
       });
     } catch (error: any) {
-      throw new AppError('Erro ao remover dependente/responsável: ' + error.message, 500);
+      throw new AppError(
+        'Erro ao remover dependente/responsável: ' + error.message,
+        500,
+      );
     }
   }
 
@@ -226,23 +241,27 @@ export class PatientRelativeController {
 
       // Buscar responsáveis legais
       const responsaveis = await prisma.patientRelative.findMany({
-        where: { 
+        where: {
           patientId: id,
-          isResponsavel: true
+          isResponsavel: true,
         },
-        orderBy: { nome: 'asc' }
+        orderBy: { nome: 'asc' },
       });
 
       return res.status(200).json({
         success: true,
         data: responsaveis,
         menorIdade,
-        message: menorIdade && responsaveis.length === 0 
-          ? 'Atenção: Paciente menor de idade sem responsável legal cadastrado' 
-          : undefined
+        message:
+          menorIdade && responsaveis.length === 0
+            ? 'Atenção: Paciente menor de idade sem responsável legal cadastrado'
+            : undefined,
       });
     } catch (error: any) {
-      throw new AppError('Erro ao buscar responsáveis legais: ' + error.message, 500);
+      throw new AppError(
+        'Erro ao buscar responsáveis legais: ' + error.message,
+        500,
+      );
     }
   }
 }

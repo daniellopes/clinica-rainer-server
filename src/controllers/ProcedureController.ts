@@ -1,11 +1,13 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
-import { 
-  createProcedureSchema, 
-  updateProcedureSchema, 
-  listProceduresSchema 
+import {
+  createProcedureSchema,
+  updateProcedureSchema,
+  listProceduresSchema,
 } from '../schemas/procedure.schema';
 import { z } from 'zod';
+import { AppError } from '../middlewares/errorHandler';
+import { ErrorHandler } from '../utils/errorHandler';
 
 const prisma = new PrismaClient();
 
@@ -20,13 +22,13 @@ export class ProcedureController {
       const existingProcedure = await prisma.procedure.findFirst({
         where: {
           nome: validatedData.nome,
-          unidade: userUnidade as any
-        }
+          unidade: userUnidade as any,
+        },
       });
 
       if (existingProcedure) {
         return res.status(400).json({
-          error: 'Já existe um procedimento com este nome nesta unidade'
+          error: 'Já existe um procedimento com este nome nesta unidade',
         });
       }
 
@@ -38,26 +40,28 @@ export class ProcedureController {
           duracao: validatedData.duracao,
           valor: validatedData.preco,
           ativo: validatedData.ativo ?? true,
-          unidade: userUnidade as any
-        }
+          unidade: userUnidade as any,
+        },
       });
 
       res.status(201).json({
         message: 'Procedimento criado com sucesso',
-        procedure
+        procedure,
       });
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({
           error: 'Dados inválidos',
-          details: error.errors
+          details: error.errors,
         });
       }
 
-      console.error('Erro ao criar procedimento:', error);
-      res.status(500).json({
-        error: 'Erro interno do servidor'
-      });
+      return ErrorHandler.handleError(
+        error,
+        res,
+        'ProcedureController.create',
+        'Erro ao criar procedimento'
+      );
     }
   }
 
@@ -66,7 +70,7 @@ export class ProcedureController {
     try {
       const validatedQuery = listProceduresSchema.parse(req.query);
       const { userUnidade } = req;
-      
+
       const {
         page = 1,
         limit = 10,
@@ -74,21 +78,21 @@ export class ProcedureController {
         categoria,
         ativo,
         orderBy = 'nome',
-        orderDirection = 'asc'
+        orderDirection = 'asc',
       } = validatedQuery;
 
       const skip = (page - 1) * limit;
 
       // Construir filtros
       const where: any = {
-        unidade: userUnidade as any
+        unidade: userUnidade as any,
       };
 
       if (search) {
         where.OR = [
           { nome: { contains: search, mode: 'insensitive' } },
           { descricao: { contains: search, mode: 'insensitive' } },
-          { categoria: { contains: search, mode: 'insensitive' } }
+          { categoria: { contains: search, mode: 'insensitive' } },
         ];
       }
 
@@ -118,8 +122,8 @@ export class ProcedureController {
           categoria: true,
           ativo: true,
           createdAt: true,
-          updatedAt: true
-        }
+          updatedAt: true,
+        },
       });
 
       const totalPages = Math.ceil(total / limit);
@@ -132,21 +136,23 @@ export class ProcedureController {
           totalItems: total,
           itemsPerPage: limit,
           hasNextPage: page < totalPages,
-          hasPreviousPage: page > 1
-        }
+          hasPreviousPage: page > 1,
+        },
       });
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({
           error: 'Parâmetros de consulta inválidos',
-          details: error.errors
+          details: error.errors,
         });
       }
 
-      console.error('Erro ao listar procedimentos:', error);
-      res.status(500).json({
-        error: 'Erro interno do servidor'
-      });
+      return ErrorHandler.handleError(
+        error,
+        res,
+        'ProcedureController.list',
+        'Erro ao listar procedimentos'
+      );
     }
   }
 
@@ -159,22 +165,24 @@ export class ProcedureController {
       const procedure = await prisma.procedure.findFirst({
         where: {
           id,
-          unidade: userUnidade as any
-        }
+          unidade: userUnidade as any,
+        },
       });
 
       if (!procedure) {
         return res.status(404).json({
-          error: 'Procedimento não encontrado'
+          error: 'Procedimento não encontrado',
         });
       }
 
       res.json({ procedure });
     } catch (error) {
-      console.error('Erro ao buscar procedimento:', error);
-      res.status(500).json({
-        error: 'Erro interno do servidor'
-      });
+      return ErrorHandler.handleError(
+        error,
+        res,
+        'ProcedureController.getById',
+        'Erro ao buscar procedimento'
+      );
     }
   }
 
@@ -188,7 +196,7 @@ export class ProcedureController {
         where: {
           categoria: { contains: categoria, mode: 'insensitive' },
           unidade: userUnidade as any,
-          ativo: true
+          ativo: true,
         },
         orderBy: { nome: 'asc' },
         select: {
@@ -197,20 +205,22 @@ export class ProcedureController {
           descricao: true,
           valor: true,
           duracao: true,
-          categoria: true
-        }
+          categoria: true,
+        },
       });
 
       res.json({
         procedures,
         categoria,
-        total: procedures.length
+        total: procedures.length,
       });
     } catch (error) {
-      console.error('Erro ao buscar procedimentos por categoria:', error);
-      res.status(500).json({
-        error: 'Erro interno do servidor'
-      });
+      return ErrorHandler.handleError(
+        error,
+        res,
+        'ProcedureController.getByCategory',
+        'Erro ao buscar procedimentos por categoria'
+      );
     }
   }
 
@@ -222,28 +232,30 @@ export class ProcedureController {
       const categories = await prisma.procedure.findMany({
         where: {
           unidade: userUnidade as any,
-          ativo: true
+          ativo: true,
         },
         select: {
-          categoria: true
+          categoria: true,
         },
-        distinct: ['categoria']
+        distinct: ['categoria'],
       });
 
       const categoryList = categories
-        .map(item => item.categoria)
-        .filter(cat => cat !== null)
+        .map((item) => item.categoria)
+        .filter((cat) => cat !== null)
         .sort();
 
       res.json({
         categories: categoryList,
-        total: categoryList.length
+        total: categoryList.length,
       });
     } catch (error) {
-      console.error('Erro ao buscar categorias:', error);
-      res.status(500).json({
-        error: 'Erro interno do servidor'
-      });
+      return ErrorHandler.handleError(
+        error,
+        res,
+        'ProcedureController.getCategories',
+        'Erro ao buscar categorias'
+      );
     }
   }
 
@@ -251,20 +263,22 @@ export class ProcedureController {
   async update(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      const validatedData = updateProcedureSchema.omit({ id: true }).parse(req.body);
+      const validatedData = updateProcedureSchema
+        .omit({ id: true })
+        .parse(req.body);
       const { userUnidade } = req;
 
       // Verificar se procedimento existe
       const existingProcedure = await prisma.procedure.findFirst({
         where: {
           id,
-          unidade: userUnidade as any
-        }
+          unidade: userUnidade as any,
+        },
       });
 
       if (!existingProcedure) {
         return res.status(404).json({
-          error: 'Procedimento não encontrado'
+          error: 'Procedimento não encontrado',
         });
       }
 
@@ -274,13 +288,13 @@ export class ProcedureController {
           where: {
             nome: validatedData.nome,
             unidade: userUnidade as any,
-            id: { not: id }
-          }
+            id: { not: id },
+          },
         });
 
         if (nameExists) {
           return res.status(400).json({
-            error: 'Já existe outro procedimento com este nome'
+            error: 'Já existe outro procedimento com este nome',
           });
         }
       }
@@ -288,33 +302,38 @@ export class ProcedureController {
       // Mapear campos do schema para o banco
       const updateData: any = {};
       if (validatedData.nome) updateData.nome = validatedData.nome;
-      if (validatedData.descricao !== undefined) updateData.descricao = validatedData.descricao;
-      if (validatedData.categoria) updateData.categoria = validatedData.categoria;
+      if (validatedData.descricao !== undefined)
+        updateData.descricao = validatedData.descricao;
+      if (validatedData.categoria)
+        updateData.categoria = validatedData.categoria;
       if (validatedData.duracao) updateData.duracao = validatedData.duracao;
       if (validatedData.preco) updateData.valor = validatedData.preco;
-      if (validatedData.ativo !== undefined) updateData.ativo = validatedData.ativo;
+      if (validatedData.ativo !== undefined)
+        updateData.ativo = validatedData.ativo;
 
       const updatedProcedure = await prisma.procedure.update({
         where: { id },
-        data: updateData
+        data: updateData,
       });
 
       res.json({
         message: 'Procedimento atualizado com sucesso',
-        procedure: updatedProcedure
+        procedure: updatedProcedure,
       });
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({
           error: 'Dados inválidos',
-          details: error.errors
+          details: error.errors,
         });
       }
 
-      console.error('Erro ao atualizar procedimento:', error);
-      res.status(500).json({
-        error: 'Erro interno do servidor'
-      });
+      return ErrorHandler.handleError(
+        error,
+        res,
+        'ProcedureController.update',
+        'Erro ao atualizar procedimento'
+      );
     }
   }
 
@@ -327,44 +346,47 @@ export class ProcedureController {
       const procedure = await prisma.procedure.findFirst({
         where: {
           id,
-          unidade: userUnidade as any
-        }
+          unidade: userUnidade as any,
+        },
       });
 
       if (!procedure) {
         return res.status(404).json({
-          error: 'Procedimento não encontrado'
+          error: 'Procedimento não encontrado',
         });
       }
 
       // Verificar se existem agendamentos vinculados
       const linkedAppointments = await prisma.appointment.count({
         where: {
-          procedureId: id
-        }
+          procedureId: id,
+        },
       });
 
       if (linkedAppointments > 0) {
         return res.status(400).json({
-          error: 'Não é possível excluir procedimento que possui agendamentos vinculados',
-          suggestion: 'Desative o procedimento ao invés de excluí-lo'
+          error:
+            'Não é possível excluir procedimento que possui agendamentos vinculados',
+          suggestion: 'Desative o procedimento ao invés de excluí-lo',
         });
       }
 
       // Como não há soft delete no schema, vamos apenas desativar
       await prisma.procedure.update({
         where: { id },
-        data: { ativo: false }
+        data: { ativo: false },
       });
 
       res.json({
-        message: 'Procedimento desativado com sucesso'
+        message: 'Procedimento desativado com sucesso',
       });
     } catch (error) {
-      console.error('Erro ao desativar procedimento:', error);
-      res.status(500).json({
-        error: 'Erro interno do servidor'
-      });
+      return ErrorHandler.handleError(
+        error,
+        res,
+        'ProcedureController.delete',
+        'Erro ao desativar procedimento'
+      );
     }
   }
 
@@ -377,13 +399,13 @@ export class ProcedureController {
       const procedure = await prisma.procedure.findFirst({
         where: {
           id,
-          unidade: userUnidade as any
-        }
+          unidade: userUnidade as any,
+        },
       });
 
       if (!procedure) {
         return res.status(404).json({
-          error: 'Procedimento não encontrado'
+          error: 'Procedimento não encontrado',
         });
       }
 
@@ -391,18 +413,20 @@ export class ProcedureController {
 
       const updatedProcedure = await prisma.procedure.update({
         where: { id },
-        data: { ativo: newStatus }
+        data: { ativo: newStatus },
       });
 
       res.json({
         message: `Procedimento ${newStatus ? 'ativado' : 'desativado'} com sucesso`,
-        procedure: updatedProcedure
+        procedure: updatedProcedure,
       });
     } catch (error) {
-      console.error('Erro ao alterar status do procedimento:', error);
-      res.status(500).json({
-        error: 'Erro interno do servidor'
-      });
+      return ErrorHandler.handleError(
+        error,
+        res,
+        'ProcedureController.toggleStatus',
+        'Erro ao alterar status do procedimento'
+      );
     }
   }
 
@@ -416,7 +440,7 @@ export class ProcedureController {
       const procedures = await prisma.procedure.findMany({
         where: {
           unidade: userUnidade as any,
-          ativo: true
+          ativo: true,
         },
         include: {
           _count: {
@@ -424,39 +448,43 @@ export class ProcedureController {
               agendamentos: {
                 where: {
                   createdAt: {
-                    gte: new Date(new Date().setDate(new Date().getDate() - 30)) // últimos 30 dias
-                  }
-                }
-              }
-            }
-          }
+                    gte: new Date(
+                      new Date().setDate(new Date().getDate() - 30),
+                    ), // últimos 30 dias
+                  },
+                },
+              },
+            },
+          },
         },
         orderBy: {
           agendamentos: {
-            _count: 'desc'
-          }
+            _count: 'desc',
+          },
         },
-        take: parseInt(limit as string)
+        take: parseInt(limit as string),
       });
 
-      const formattedProcedures = procedures.map(procedure => ({
+      const formattedProcedures = procedures.map((procedure) => ({
         id: procedure.id,
         nome: procedure.nome,
         valor: procedure.valor,
         duracao: procedure.duracao,
         categoria: procedure.categoria,
-        agendamentosCount: procedure._count.agendamentos
+        agendamentosCount: procedure._count.agendamentos,
       }));
 
       res.json({
         procedures: formattedProcedures,
-        period: 'Últimos 30 dias'
+        period: 'Últimos 30 dias',
       });
     } catch (error) {
-      console.error('Erro ao buscar procedimentos populares:', error);
-      res.status(500).json({
-        error: 'Erro interno do servidor'
-      });
+      return ErrorHandler.handleError(
+        error,
+        res,
+        'ProcedureController.getMostPopular',
+        'Erro ao buscar procedimentos populares'
+      );
     }
   }
 }

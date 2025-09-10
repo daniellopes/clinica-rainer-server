@@ -2,13 +2,16 @@ import { Router } from 'express';
 import { ProductController } from '../controllers/ProductController';
 import { authMiddleware } from '../middlewares/authMiddleware';
 import { checkUnidadeMiddleware } from '../middlewares/checkUnidadeMiddleware';
-import { validateZod, validateParamsZod } from '../middlewares/validationMiddleware';
-import { 
-  createProductSchema, 
+import {
+  validateZod,
+  validateParamsZod,
+} from '../middlewares/validationMiddleware';
+import {
+  createProductSchema,
   updateProductSchema,
   getProductByIdSchema,
   getProductByBarcodeSchema,
-  adjustStockSchema
+  adjustStockSchema,
 } from '../schemas/product.schema';
 
 const router = Router();
@@ -25,10 +28,27 @@ router.get('/low-stock', productController.getLowStock);
 // Rotas principais
 router.get('/', productController.list);
 router.post('/', validateZod(createProductSchema), productController.create);
-router.get('/:id', validateParamsZod(getProductByIdSchema), productController.getById);
-router.put('/:id', validateParamsZod(getProductByIdSchema), validateZod(updateProductSchema), productController.update);
-router.patch('/:id/toggle-status', validateParamsZod(getProductByIdSchema), productController.toggleStatus);
-router.post('/:id/adjust-stock', validateZod(adjustStockSchema), productController.adjustStock);
+router.get(
+  '/:id',
+  validateParamsZod(getProductByIdSchema),
+  productController.getById,
+);
+router.put(
+  '/:id',
+  validateParamsZod(getProductByIdSchema),
+  validateZod(updateProductSchema),
+  productController.update,
+);
+router.patch(
+  '/:id/toggle-status',
+  validateParamsZod(getProductByIdSchema),
+  productController.toggleStatus,
+);
+router.post(
+  '/:id/adjust-stock',
+  validateZod(adjustStockSchema),
+  productController.adjustStock,
+);
 
 // Rota por código de barras
 router.get('/barcode/:codigoBarras', productController.getByBarcode);

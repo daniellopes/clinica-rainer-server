@@ -1,12 +1,14 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
-import { 
-  createProductSchema, 
-  updateProductSchema, 
+import {
+  createProductSchema,
+  updateProductSchema,
   listProductsSchema,
-  adjustStockSchema
+  adjustStockSchema,
 } from '../schemas/product.schema';
 import { z } from 'zod';
+import { AppError } from '../middlewares/errorHandler';
+import { ErrorHandler } from '../utils/errorHandler';
 
 const prisma = new PrismaClient();
 
@@ -21,13 +23,13 @@ export class ProductController {
       const existingProduct = await prisma.product.findFirst({
         where: {
           nome: validatedData.nome,
-          unidade: unidade as any
-        }
+          unidade: unidade as any,
+        },
       });
 
       if (existingProduct) {
         return res.status(400).json({
-          error: 'Já existe um produto com este nome nesta unidade'
+          error: 'Já existe um produto com este nome nesta unidade',
         });
       }
 
@@ -36,13 +38,13 @@ export class ProductController {
         const existingBarcode = await prisma.product.findFirst({
           where: {
             codigoBarras: validatedData.codigoBarras,
-            unidade: unidade as any
-          }
+            unidade: unidade as any,
+          },
         });
 
         if (existingBarcode) {
           return res.status(400).json({
-            error: 'Já existe um produto com este código de barras'
+            error: 'Já existe um produto com este código de barras',
           });
         }
       }
@@ -51,26 +53,21 @@ export class ProductController {
         data: {
           ...validatedData,
           unidade: unidade as any,
-          estoqueAtual: 0 // Iniciar com estoque zerado
-        }
+          estoqueAtual: 0, // Iniciar com estoque zerado
+        },
       });
 
       res.status(201).json({
         message: 'Produto criado com sucesso',
-        product
+        product,
       });
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({
-          error: 'Dados inválidos',
-          details: error.errors
-        });
-      }
-
-      console.error('Erro ao criar produto:', error);
-      res.status(500).json({
-        error: 'Erro interno do servidor'
-      });
+      return ErrorHandler.handleError(
+        error,
+        res,
+        'ProductController.create',
+        'Erro ao criar produto'
+      );
     }
   }
 
@@ -79,7 +76,7 @@ export class ProductController {
     try {
       const validatedQuery = listProductsSchema.parse(req.query);
       const unidade = (req as any).userUnidade!;
-      
+
       const {
         page = 1,
         limit = 10,
@@ -88,14 +85,14 @@ export class ProductController {
         ativo,
         estoqueMinimo,
         orderBy = 'nome',
-        orderDirection = 'asc'
+        orderDirection = 'asc',
       } = validatedQuery;
 
       const skip = (page - 1) * limit;
 
       // Construir filtros
       const where: any = {
-        unidade: unidade as any
+        unidade: unidade as any,
       };
 
       if (search) {
@@ -104,7 +101,7 @@ export class ProductController {
           { descricao: { contains: search, mode: 'insensitive' } },
           { categoria: { contains: search, mode: 'insensitive' } },
           { codigoBarras: { contains: search } },
-          { fabricante: { contains: search, mode: 'insensitive' } }
+          { fabricante: { contains: search, mode: 'insensitive' } },
         ];
       }
 
@@ -143,8 +140,8 @@ export class ProductController {
           precoVenda: true,
           ativo: true,
           createdAt: true,
-          updatedAt: true
-        }
+          updatedAt: true,
+        },
       });
 
       const totalPages = Math.ceil(total / limit);
@@ -157,21 +154,16 @@ export class ProductController {
           totalItems: total,
           itemsPerPage: limit,
           hasNextPage: page < totalPages,
-          hasPreviousPage: page > 1
-        }
+          hasPreviousPage: page > 1,
+        },
       });
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({
-          error: 'Parâmetros de consulta inválidos',
-          details: error.errors
-        });
-      }
-
-      console.error('Erro ao listar produtos:', error);
-      res.status(500).json({
-        error: 'Erro interno do servidor'
-      });
+      return ErrorHandler.handleError(
+        error,
+        res,
+        'ProductController.list',
+        'Erro ao listar produtos'
+      );
     }
   }
 
@@ -184,37 +176,39 @@ export class ProductController {
       const product = await prisma.product.findFirst({
         where: {
           id,
-          unidade: unidade as any
+          unidade: unidade as any,
         },
         include: {
           lotes: {
             where: { ativo: true },
-            orderBy: { validade: 'asc' }
+            orderBy: { validade: 'asc' },
           },
           movimentacoes: {
             take: 10,
             orderBy: { createdAt: 'desc' },
             include: {
               criadoPor: {
-                select: { nome: true }
-              }
-            }
-          }
-        }
+                select: { nome: true },
+              },
+            },
+          },
+        },
       });
 
       if (!product) {
         return res.status(404).json({
-          error: 'Produto não encontrado'
+          error: 'Produto não encontrado',
         });
       }
 
       res.json({ product });
     } catch (error) {
-      console.error('Erro ao buscar produto:', error);
-      res.status(500).json({
-        error: 'Erro interno do servidor'
-      });
+      return ErrorHandler.handleError(
+        error,
+        res,
+        'ProductController.getById',
+        'Erro ao buscar produto'
+      );
     }
   }
 
@@ -227,22 +221,24 @@ export class ProductController {
       const product = await prisma.product.findFirst({
         where: {
           codigoBarras,
-          unidade: unidade as any
-        }
+          unidade: unidade as any,
+        },
       });
 
       if (!product) {
         return res.status(404).json({
-          error: 'Produto não encontrado'
+          error: 'Produto não encontrado',
         });
       }
 
       res.json({ product });
     } catch (error) {
-      console.error('Erro ao buscar produto por código de barras:', error);
-      res.status(500).json({
-        error: 'Erro interno do servidor'
-      });
+      return ErrorHandler.handleError(
+        error,
+        res,
+        'ProductController.getByBarcode',
+        'Erro ao buscar produto por código de barras'
+      );
     }
   }
 
@@ -257,13 +253,13 @@ export class ProductController {
       const existingProduct = await prisma.product.findFirst({
         where: {
           id,
-          unidade: unidade as any
-        }
+          unidade: unidade as any,
+        },
       });
 
       if (!existingProduct) {
         return res.status(404).json({
-          error: 'Produto não encontrado'
+          error: 'Produto não encontrado',
         });
       }
 
@@ -273,55 +269,53 @@ export class ProductController {
           where: {
             nome: validatedData.nome,
             unidade: unidade as any,
-            id: { not: id }
-          }
+            id: { not: id },
+          },
         });
 
         if (nameExists) {
           return res.status(400).json({
-            error: 'Já existe outro produto com este nome'
+            error: 'Já existe outro produto com este nome',
           });
         }
       }
 
       // Verificar código de barras duplicado (se está sendo alterado)
-      if (validatedData.codigoBarras && validatedData.codigoBarras !== existingProduct.codigoBarras) {
+      if (
+        validatedData.codigoBarras &&
+        validatedData.codigoBarras !== existingProduct.codigoBarras
+      ) {
         const barcodeExists = await prisma.product.findFirst({
           where: {
             codigoBarras: validatedData.codigoBarras,
             unidade: unidade as any,
-            id: { not: id }
-          }
+            id: { not: id },
+          },
         });
 
         if (barcodeExists) {
           return res.status(400).json({
-            error: 'Já existe outro produto com este código de barras'
+            error: 'Já existe outro produto com este código de barras',
           });
         }
       }
 
       const updatedProduct = await prisma.product.update({
         where: { id },
-        data: validatedData
+        data: validatedData,
       });
 
       res.json({
         message: 'Produto atualizado com sucesso',
-        product: updatedProduct
+        product: updatedProduct,
       });
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({
-          error: 'Dados inválidos',
-          details: error.errors
-        });
-      }
-
-      console.error('Erro ao atualizar produto:', error);
-      res.status(500).json({
-        error: 'Erro interno do servidor'
-      });
+      return ErrorHandler.handleError(
+        error,
+        res,
+        'ProductController.update',
+        'Erro ao atualizar produto'
+      );
     }
   }
 
@@ -334,13 +328,13 @@ export class ProductController {
       const product = await prisma.product.findFirst({
         where: {
           id,
-          unidade: unidade as any
-        }
+          unidade: unidade as any,
+        },
       });
 
       if (!product) {
         return res.status(404).json({
-          error: 'Produto não encontrado'
+          error: 'Produto não encontrado',
         });
       }
 
@@ -348,18 +342,20 @@ export class ProductController {
 
       const updatedProduct = await prisma.product.update({
         where: { id },
-        data: { ativo: newStatus }
+        data: { ativo: newStatus },
       });
 
       res.json({
         message: `Produto ${newStatus ? 'ativado' : 'desativado'} com sucesso`,
-        product: updatedProduct
+        product: updatedProduct,
       });
     } catch (error) {
-      console.error('Erro ao alterar status do produto:', error);
-      res.status(500).json({
-        error: 'Erro interno do servidor'
-      });
+      return ErrorHandler.handleError(
+        error,
+        res,
+        'ProductController.toggleStatus',
+        'Erro ao alterar status do produto'
+      );
     }
   }
 
@@ -374,13 +370,13 @@ export class ProductController {
       const product = await prisma.product.findFirst({
         where: {
           id,
-          unidade: unidade as any
-        }
+          unidade: unidade as any,
+        },
       });
 
       if (!product) {
         return res.status(404).json({
-          error: 'Produto não encontrado'
+          error: 'Produto não encontrado',
         });
       }
 
@@ -390,7 +386,7 @@ export class ProductController {
         return res.status(400).json({
           error: 'Estoque não pode ficar negativo',
           estoqueAtual: product.estoqueAtual,
-          tentativaAjuste: validatedData.quantidade
+          tentativaAjuste: validatedData.quantidade,
         });
       }
 
@@ -399,7 +395,7 @@ export class ProductController {
         // Atualizar estoque do produto
         const updatedProduct = await tx.product.update({
           where: { id },
-          data: { estoqueAtual: novoEstoque }
+          data: { estoqueAtual: novoEstoque },
         });
 
         // Criar movimentação
@@ -411,8 +407,8 @@ export class ProductController {
             motivo: validatedData.motivo,
             observacoes: validatedData.observacoes,
             criadoPorId: userId,
-            unidade: unidade as any
-          }
+            unidade: unidade as any,
+          },
         });
 
         return { product: updatedProduct, movement };
@@ -421,20 +417,15 @@ export class ProductController {
       res.json({
         message: 'Estoque ajustado com sucesso',
         product: result.product,
-        movement: result.movement
+        movement: result.movement,
       });
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({
-          error: 'Dados inválidos',
-          details: error.errors
-        });
-      }
-
-      console.error('Erro ao ajustar estoque:', error);
-      res.status(500).json({
-        error: 'Erro interno do servidor'
-      });
+      return ErrorHandler.handleError(
+        error,
+        res,
+        'ProductController.adjustStock',
+        'Erro ao ajustar estoque'
+      );
     }
   }
 
@@ -448,33 +439,32 @@ export class ProductController {
           unidade: unidade as any,
           ativo: true,
           estoqueAtual: {
-            lte: prisma.product.fields.estoqueMinimo
-          }
+            lte: prisma.product.fields.estoqueMinimo,
+          },
         },
-        orderBy: [
-          { estoqueAtual: 'asc' },
-          { nome: 'asc' }
-        ],
+        orderBy: [{ estoqueAtual: 'asc' }, { nome: 'asc' }],
         select: {
           id: true,
           nome: true,
           categoria: true,
           estoqueAtual: true,
           estoqueMinimo: true,
-          localizacao: true
-        }
+          localizacao: true,
+        },
       });
 
       res.json({
         products,
         total: products.length,
-        message: `${products.length} produto(s) com estoque baixo`
+        message: `${products.length} produto(s) com estoque baixo`,
       });
     } catch (error) {
-      console.error('Erro ao buscar produtos com estoque baixo:', error);
-      res.status(500).json({
-        error: 'Erro interno do servidor'
-      });
+      return ErrorHandler.handleError(
+        error,
+        res,
+        'ProductController.getLowStock',
+        'Erro ao buscar produtos com estoque baixo'
+      );
     }
   }
 
@@ -486,28 +476,30 @@ export class ProductController {
       const categories = await prisma.product.findMany({
         where: {
           unidade: unidade as any,
-          ativo: true
+          ativo: true,
         },
         select: {
-          categoria: true
+          categoria: true,
         },
-        distinct: ['categoria']
+        distinct: ['categoria'],
       });
 
       const categoryList = categories
-        .map(item => item.categoria)
-        .filter(cat => cat !== null)
+        .map((item) => item.categoria)
+        .filter((cat) => cat !== null)
         .sort();
 
       res.json({
         categories: categoryList,
-        total: categoryList.length
+        total: categoryList.length,
       });
     } catch (error) {
-      console.error('Erro ao buscar categorias:', error);
-      res.status(500).json({
-        error: 'Erro interno do servidor'
-      });
+      return ErrorHandler.handleError(
+        error,
+        res,
+        'ProductController.getCategories',
+        'Erro ao buscar categorias'
+      );
     }
   }
 }

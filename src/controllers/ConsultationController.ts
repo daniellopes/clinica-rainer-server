@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { z } from 'zod';
 import { AppError } from '../middlewares/errorHandler';
+import { ErrorHandler } from '../utils/errorHandler';
 
 const prisma = new PrismaClient();
 
@@ -10,13 +11,17 @@ const listConsultationsSchema = z.object({
   page: z.coerce.number().min(1).default(1),
   limit: z.coerce.number().min(1).max(100).default(20),
   search: z.string().optional(),
-  status: z.enum(['AGENDADA', 'EM_ANDAMENTO', 'CONCLUIDA', 'CANCELADA']).optional(),
+  status: z
+    .enum(['AGENDADA', 'EM_ANDAMENTO', 'CONCLUIDA', 'CANCELADA'])
+    .optional(),
   medicoId: z.string().uuid().optional(),
   patientId: z.string().uuid().optional(),
   dataInicio: z.string().optional(),
   dataFim: z.string().optional(),
-  orderBy: z.enum(['dataConsulta', 'createdAt', 'updatedAt']).default('dataConsulta'),
-  orderDirection: z.enum(['asc', 'desc']).default('desc')
+  orderBy: z
+    .enum(['dataConsulta', 'createdAt', 'updatedAt'])
+    .default('dataConsulta'),
+  orderDirection: z.enum(['asc', 'desc']).default('desc'),
 });
 
 const updateConsultationSchema = z.object({
@@ -26,7 +31,9 @@ const updateConsultationSchema = z.object({
   hipoteseDiagnostica: z.string().optional(),
   conduta: z.string().optional(),
   observacoes: z.string().optional(),
-  status: z.enum(['AGENDADA', 'EM_ANDAMENTO', 'CONCLUIDA', 'CANCELADA']).optional()
+  status: z
+    .enum(['AGENDADA', 'EM_ANDAMENTO', 'CONCLUIDA', 'CANCELADA'])
+    .optional(),
 });
 
 // Interface para requisições autenticadas
@@ -41,12 +48,23 @@ export class ConsultationController {
   async list(req: AuthenticatedRequest, res: Response) {
     try {
       const validatedQuery = listConsultationsSchema.parse(req.query);
-      const { page, limit, search, status, medicoId, patientId, dataInicio, dataFim, orderBy, orderDirection } = validatedQuery;
+      const {
+        page,
+        limit,
+        search,
+        status,
+        medicoId,
+        patientId,
+        dataInicio,
+        dataFim,
+        orderBy,
+        orderDirection,
+      } = validatedQuery;
       const { userUnidade } = req;
 
       // Construir filtros dinâmicos
       const where: any = {
-        unidade: userUnidade as any
+        unidade: userUnidade as any,
       };
 
       if (search) {
@@ -56,18 +74,18 @@ export class ConsultationController {
               OR: [
                 { nome: { contains: search, mode: 'insensitive' } },
                 { cpf: { contains: search } },
-                { telefone: { contains: search } }
-              ]
-            }
+                { telefone: { contains: search } },
+              ],
+            },
           },
           {
             procedure: {
-              nome: { contains: search, mode: 'insensitive' }
-            }
+              nome: { contains: search, mode: 'insensitive' },
+            },
           },
           {
-            queixaPrincipal: { contains: search, mode: 'insensitive' }
-          }
+            queixaPrincipal: { contains: search, mode: 'insensitive' },
+          },
         ];
       }
 
@@ -103,7 +121,7 @@ export class ConsultationController {
           skip,
           take: limit,
           orderBy: {
-            [orderBy]: orderDirection
+            [orderBy]: orderDirection,
           },
           include: {
             patient: {
@@ -112,34 +130,34 @@ export class ConsultationController {
                 nome: true,
                 cpf: true,
                 telefone: true,
-                nascimento: true
-              }
+                nascimento: true,
+              },
             },
             procedure: {
               select: {
                 id: true,
                 nome: true,
                 duracao: true,
-                valor: true
-              }
+                valor: true,
+              },
             },
             medico: {
               select: {
                 id: true,
                 nome: true,
-                especialidade: true
-              }
+                especialidade: true,
+              },
             },
             appointment: {
               select: {
                 id: true,
                 dataHora: true,
-                status: true
-              }
-            }
-          }
+                status: true,
+              },
+            },
+          },
         }),
-        prisma.consultation.count({ where })
+        prisma.consultation.count({ where }),
       ]);
 
       // Calcular metadados de paginação
@@ -156,18 +174,16 @@ export class ConsultationController {
           total,
           totalPages,
           hasNextPage,
-          hasPreviousPage
-        }
+          hasPreviousPage,
+        },
       });
-
-    } catch (error: any) {
-      console.error('Erro ao listar consultas:', error);
-      
-      if (error instanceof z.ZodError) {
-        throw new AppError('Dados de entrada inválidos', 400);
-      }
-      
-      throw new AppError('Erro ao listar consultas', 500);
+    } catch (error: unknown) {
+      return ErrorHandler.handleError(
+        error,
+        res,
+        'ConsultationController.list',
+        'Erro ao listar consultas'
+      );
     }
   }
 
@@ -184,7 +200,7 @@ export class ConsultationController {
       const consultation = await prisma.consultation.findFirst({
         where: {
           id,
-          unidade: userUnidade as any as any as any as any as any as any as any
+          unidade: userUnidade as any as any as any as any as any as any as any,
         },
         include: {
           patient: {
@@ -195,8 +211,8 @@ export class ConsultationController {
               telefone: true,
               nascimento: true,
               endereco: true,
-              email: true
-            }
+              email: true,
+            },
           },
           procedure: {
             select: {
@@ -204,24 +220,24 @@ export class ConsultationController {
               nome: true,
               duracao: true,
               valor: true,
-              descricao: true
-            }
+              descricao: true,
+            },
           },
           medico: {
             select: {
               id: true,
               nome: true,
               especialidade: true,
-              email: true
-            }
+              email: true,
+            },
           },
           appointment: {
             select: {
               id: true,
               dataHora: true,
               status: true,
-              observacoes: true
-            }
+              observacoes: true,
+            },
           },
           anamneses: {
             include: {
@@ -229,20 +245,20 @@ export class ConsultationController {
                 select: {
                   id: true,
                   nome: true,
-                  especialidade: true
-                }
-              }
-            }
+                  especialidade: true,
+                },
+              },
+            },
           },
           receitas: {
             select: {
               id: true,
               conteudo: true,
               observacoes: true,
-              createdAt: true
-            }
-          }
-        }
+              createdAt: true,
+            },
+          },
+        },
       });
 
       if (!consultation) {
@@ -251,17 +267,15 @@ export class ConsultationController {
 
       return res.json({
         success: true,
-        data: consultation
+        data: consultation,
       });
-
-    } catch (error: any) {
-      console.error('Erro ao buscar consulta:', error);
-      
-      if (error instanceof AppError) {
-        throw error;
-      }
-      
-      throw new AppError('Erro ao buscar consulta', 500);
+    } catch (error: unknown) {
+      return ErrorHandler.handleError(
+        error,
+        res,
+        'ConsultationController.getById',
+        'Erro ao buscar consulta'
+      );
     }
   }
 
@@ -280,8 +294,8 @@ export class ConsultationController {
       const existingConsultation = await prisma.consultation.findFirst({
         where: {
           id,
-          unidade: userUnidade as any
-        }
+          unidade: userUnidade as any,
+        },
       });
 
       if (!existingConsultation) {
@@ -293,50 +307,44 @@ export class ConsultationController {
         where: { id },
         data: {
           ...validatedData,
-          updatedAt: new Date()
+          updatedAt: new Date(),
         },
         include: {
           patient: {
             select: {
               id: true,
               nome: true,
-              cpf: true
-            }
+              cpf: true,
+            },
           },
           procedure: {
             select: {
               id: true,
-              nome: true
-            }
+              nome: true,
+            },
           },
           medico: {
             select: {
               id: true,
               nome: true,
-              especialidade: true
-            }
-          }
-        }
+              especialidade: true,
+            },
+          },
+        },
       });
 
       return res.json({
         success: true,
         message: 'Consulta atualizada com sucesso',
-        data: updatedConsultation
+        data: updatedConsultation,
       });
-
-    } catch (error: any) {
-      console.error('Erro ao atualizar consulta:', error);
-      
-      if (error instanceof z.ZodError) {
-        throw new AppError('Dados de entrada inválidos', 400);
-      }
-      
-      if (error instanceof AppError) {
-        throw error;
-      }
-      
-      throw new AppError('Erro ao atualizar consulta', 500);
+    } catch (error: unknown) {
+      return ErrorHandler.handleError(
+        error,
+        res,
+        'ConsultationController.update',
+        'Erro ao atualizar consulta'
+      );
     }
   }
 
@@ -354,11 +362,11 @@ export class ConsultationController {
       const consultation = await prisma.consultation.findFirst({
         where: {
           id,
-          unidade: userUnidade as any
+          unidade: userUnidade as any,
         },
         include: {
-          appointment: true
-        }
+          appointment: true,
+        },
       });
 
       if (!consultation) {
@@ -376,8 +384,8 @@ export class ConsultationController {
           where: { id },
           data: {
             status: 'CONCLUIDA',
-            updatedAt: new Date()
-          }
+            updatedAt: new Date(),
+          },
         });
 
         // Atualizar status do agendamento se existir
@@ -386,8 +394,8 @@ export class ConsultationController {
             where: { id: consultation.appointmentId },
             data: {
               status: 'CONCLUIDO',
-              updatedAt: new Date()
-            }
+              updatedAt: new Date(),
+            },
           });
         }
 
@@ -397,17 +405,15 @@ export class ConsultationController {
       return res.json({
         success: true,
         message: 'Consulta finalizada com sucesso',
-        data: result
+        data: result,
       });
-
-    } catch (error: any) {
-      console.error('Erro ao finalizar consulta:', error);
-      
-      if (error instanceof AppError) {
-        throw error;
-      }
-      
-      throw new AppError('Erro ao finalizar consulta', 500);
+    } catch (error: unknown) {
+      return ErrorHandler.handleError(
+        error,
+        res,
+        'ConsultationController.finish',
+        'Erro ao finalizar consulta'
+      );
     }
   }
 
@@ -426,11 +432,11 @@ export class ConsultationController {
       const consultation = await prisma.consultation.findFirst({
         where: {
           id,
-          unidade: userUnidade as any
+          unidade: userUnidade as any,
         },
         include: {
-          appointment: true
-        }
+          appointment: true,
+        },
       });
 
       if (!consultation) {
@@ -442,7 +448,10 @@ export class ConsultationController {
       }
 
       if (consultation.status === 'CONCLUIDA') {
-        throw new AppError('Não é possível cancelar uma consulta finalizada', 400);
+        throw new AppError(
+          'Não é possível cancelar uma consulta finalizada',
+          400,
+        );
       }
 
       // Cancelar consulta e atualizar agendamento em uma transação
@@ -452,9 +461,11 @@ export class ConsultationController {
           where: { id },
           data: {
             status: 'CANCELADA',
-            observacoes: motivo ? `${consultation.observacoes || ''}\n\nMotivo do cancelamento: ${motivo}` : consultation.observacoes,
-            updatedAt: new Date()
-          }
+            observacoes: motivo
+              ? `${consultation.observacoes || ''}\n\nMotivo do cancelamento: ${motivo}`
+              : consultation.observacoes,
+            updatedAt: new Date(),
+          },
         });
 
         // Atualizar status do agendamento se existir
@@ -464,8 +475,8 @@ export class ConsultationController {
             data: {
               status: 'CANCELADO',
               motivoCancelamento: motivo,
-              updatedAt: new Date()
-            }
+              updatedAt: new Date(),
+            },
           });
         }
 
@@ -475,17 +486,15 @@ export class ConsultationController {
       return res.json({
         success: true,
         message: 'Consulta cancelada com sucesso',
-        data: result
+        data: result,
       });
-
-    } catch (error: any) {
-      console.error('Erro ao cancelar consulta:', error);
-      
-      if (error instanceof AppError) {
-        throw error;
-      }
-      
-      throw new AppError('Erro ao cancelar consulta', 500);
+    } catch (error: unknown) {
+      return ErrorHandler.handleError(
+        error,
+        res,
+        'ConsultationController.cancel',
+        'Erro ao cancelar consulta'
+      );
     }
   }
 
@@ -497,7 +506,7 @@ export class ConsultationController {
       const consultationsInProgress = await prisma.consultation.findMany({
         where: {
           unidade: userUnidade as any,
-          status: 'EM_ANDAMENTO'
+          status: 'EM_ANDAMENTO',
         },
         include: {
           patient: {
@@ -505,37 +514,40 @@ export class ConsultationController {
               id: true,
               nome: true,
               cpf: true,
-              telefone: true
-            }
+              telefone: true,
+            },
           },
           procedure: {
             select: {
               id: true,
               nome: true,
-              duracao: true
-            }
+              duracao: true,
+            },
           },
           medico: {
             select: {
               id: true,
               nome: true,
-              especialidade: true
-            }
-          }
+              especialidade: true,
+            },
+          },
         },
         orderBy: {
-          dataConsulta: 'asc'
-        }
+          dataConsulta: 'asc',
+        },
       });
 
       return res.json({
         success: true,
-        data: consultationsInProgress
+        data: consultationsInProgress,
       });
-
-    } catch (error: any) {
-      console.error('Erro ao buscar consultas em andamento:', error);
-      throw new AppError('Erro ao buscar consultas em andamento', 500);
+    } catch (error: unknown) {
+      return ErrorHandler.handleError(
+        error,
+        res,
+        'ConsultationController.getInProgress',
+        'Erro ao buscar consultas em andamento'
+      );
     }
   }
 }

@@ -13,7 +13,7 @@ export class AppError extends Error {
     this.statusCode = statusCode;
     this.code = code;
     this.isOperational = true;
-    
+
     // Manter stack trace limpo
     Error.captureStackTrace(this, this.constructor);
   }
@@ -27,7 +27,7 @@ export const errorHandler = (
   error: Error,
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   // Se resposta já foi enviada, passe para o próximo middleware
   if (res.headersSent) {
@@ -40,28 +40,28 @@ export const errorHandler = (
       status: 'error',
       message: error.message,
       code: error.code,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   }
 
   // Erros específicos do Prisma
   if (error.name === 'PrismaClientKnownRequestError') {
     const prismaError = error as any;
-    
+
     switch (prismaError.code) {
       case 'P2002':
         return res.status(409).json({
           status: 'error',
           message: 'Registro já existe',
           code: 'DUPLICATE_RECORD',
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
       case 'P2025':
         return res.status(404).json({
           status: 'error',
           message: 'Registro não encontrado',
           code: 'RECORD_NOT_FOUND',
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
       default:
         break;
@@ -74,7 +74,7 @@ export const errorHandler = (
       status: 'error',
       message: 'Token inválido',
       code: 'INVALID_TOKEN',
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   }
 
@@ -83,7 +83,7 @@ export const errorHandler = (
       status: 'error',
       message: 'Token expirado',
       code: 'EXPIRED_TOKEN',
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   }
 
@@ -94,7 +94,7 @@ export const errorHandler = (
       stack: error.stack,
       url: req.url,
       method: req.method,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   } else {
     // Em produção, log apenas informações essenciais
@@ -102,7 +102,7 @@ export const errorHandler = (
       message: error.message,
       url: req.url,
       method: req.method,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   }
 
@@ -111,6 +111,6 @@ export const errorHandler = (
     status: 'error',
     message: 'Erro interno do servidor',
     code: 'INTERNAL_SERVER_ERROR',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 };

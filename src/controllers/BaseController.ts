@@ -65,14 +65,14 @@ export interface BaseControllerConfig<T> {
 
 /**
  * Controller base abstrato com operações CRUD padrão
- * 
+ *
  * Fornece implementações reutilizáveis para:
  * - Criação com validação e verificação de duplicidade
  * - Listagem com filtros, paginação e ordenação
  * - Busca por ID
  * - Atualização com validação
  * - Exclusão (soft delete quando aplicável)
- * 
+ *
  * @example
  * ```typescript
  * class ProductController extends BaseController<Product> {
@@ -86,7 +86,7 @@ export interface BaseControllerConfig<T> {
  *       sortableFields: ['name', 'createdAt', 'price']
  *     });
  *   }
- * 
+ *
  *   protected getModel() {
  *     return this.prisma.product;
  *   }
@@ -104,7 +104,7 @@ export abstract class BaseController<T> {
       defaultLimit: 10,
       filterableFields: [],
       sortableFields: ['createdAt', 'updatedAt'],
-      ...config
+      ...config,
     };
   }
 
@@ -116,9 +116,12 @@ export abstract class BaseController<T> {
   /**
    * Extrai e valida parâmetros de paginação da query
    */
-  protected extractPaginationParams(query: any): PaginationConfig {
-    const page = Math.max(1, parseInt(query.page) || 1);
-    const limit = Math.min(100, Math.max(1, parseInt(query.limit) || this.config.defaultLimit!));
+  protected extractPaginationParams(query: Record<string, unknown>): PaginationConfig {
+    const page = Math.max(1, parseInt(query.page as string) || 1);
+    const limit = Math.min(
+      100,
+      Math.max(1, parseInt(query.limit as string) || this.config.defaultLimit!),
+    );
     const skip = (page - 1) * limit;
 
     return { page, limit, skip };
@@ -127,8 +130,8 @@ export abstract class BaseController<T> {
   /**
    * Extrai e valida parâmetros de ordenação da query
    */
-  protected extractSortParams(query: any): SortConfig {
-    const field = query.sortBy || this.config.defaultSort!.field;
+  protected extractSortParams(query: Record<string, unknown>): SortConfig {
+    const field = (query.sortBy as string) || this.config.defaultSort!.field;
     const direction = query.sortOrder === 'asc' ? 'asc' : 'desc';
 
     // Valida se o campo é permitido para ordenação
@@ -142,16 +145,16 @@ export abstract class BaseController<T> {
   /**
    * Extrai filtros válidos da query
    */
-  protected extractFilters(query: any): ListFilters {
+  protected extractFilters(query: Record<string, unknown>): ListFilters {
     const filters: ListFilters = {};
 
-    this.config.filterableFields!.forEach(field => {
+    this.config.filterableFields!.forEach((field) => {
       if (query[field] !== undefined && query[field] !== '') {
         // Para campos de texto, usa busca parcial (contains)
         if (typeof query[field] === 'string') {
           filters[field] = {
             contains: query[field],
-            mode: 'insensitive'
+            mode: 'insensitive',
           };
         } else {
           filters[field] = query[field];
@@ -165,7 +168,10 @@ export abstract class BaseController<T> {
   /**
    * Verifica duplicidade baseada nos campos únicos configurados
    */
-  protected async checkDuplicates(data: any, excludeId?: string): Promise<string[]> {
+  protected async checkDuplicates(
+    data: Record<string, unknown>,
+    excludeId?: string,
+  ): Promise<string[]> {
     if (!this.config.uniqueFields || this.config.uniqueFields.length === 0) {
       return [];
     }
@@ -175,17 +181,19 @@ export abstract class BaseController<T> {
 
     for (const field of this.config.uniqueFields) {
       if (data[field]) {
-        const whereClause: any = { [field]: data[field] };
-        
+        const whereClause: Record<string, unknown> = { [field]: data[field] };
+
         // Exclui o próprio registro em caso de atualização
         if (excludeId) {
           whereClause.id = { not: excludeId };
         }
 
         const existing = await model.findFirst({ where: whereClause });
-        
+
         if (existing) {
-          errors.push(`${this.config.entityName} com ${field} '${data[field]}' já existe`);
+          errors.push(
+            `${this.config.entityName} com ${field} '${data[field]}' já existe`,
+          );
         }
       }
     }
@@ -203,7 +211,7 @@ export abstract class BaseController<T> {
       if (!validationResult.success) {
         return res.status(400).json({
           error: 'Dados inválidos',
-          details: validationResult.error.errors
+          details: validationResult.error.errors,
         });
       }
 
@@ -214,7 +222,7 @@ export abstract class BaseController<T> {
       if (duplicateErrors.length > 0) {
         return res.status(409).json({
           error: 'Conflito de dados',
-          details: duplicateErrors
+          details: duplicateErrors,
         });
       }
 
@@ -224,12 +232,12 @@ export abstract class BaseController<T> {
 
       return res.status(201).json({
         message: `${this.config.entityName} criado com sucesso`,
-        data: created
+        data: created,
       });
     } catch (error) {
       console.error(`Erro ao criar ${this.config.entityName}:`, error);
       return res.status(500).json({
-        error: `Erro interno do servidor ao criar ${this.config.entityName}`
+        error: `Erro interno do servidor ao criar ${this.config.entityName}`,
       });
     }
   }
@@ -251,9 +259,9 @@ export abstract class BaseController<T> {
           where: filters,
           orderBy: { [sort.field]: sort.direction },
           skip: pagination.skip,
-          take: pagination.limit
+          take: pagination.limit,
         }),
-        model.count({ where: filters })
+        model.count({ where: filters }),
       ]);
 
       const totalPages = Math.ceil(total / pagination.limit);
@@ -266,15 +274,15 @@ export abstract class BaseController<T> {
           total,
           totalPages,
           hasNext: pagination.page < totalPages,
-          hasPrev: pagination.page > 1
-        }
+          hasPrev: pagination.page > 1,
+        },
       };
 
       return res.json(response);
     } catch (error) {
       console.error(`Erro ao listar ${this.config.entityName}:`, error);
       return res.status(500).json({
-        error: `Erro interno do servidor ao listar ${this.config.entityName}`
+        error: `Erro interno do servidor ao listar ${this.config.entityName}`,
       });
     }
   }
@@ -288,7 +296,7 @@ export abstract class BaseController<T> {
 
       if (!id) {
         return res.status(400).json({
-          error: 'ID é obrigatório'
+          error: 'ID é obrigatório',
         });
       }
 
@@ -297,7 +305,7 @@ export abstract class BaseController<T> {
 
       if (!record) {
         return res.status(404).json({
-          error: `${this.config.entityName} não encontrado`
+          error: `${this.config.entityName} não encontrado`,
         });
       }
 
@@ -305,7 +313,7 @@ export abstract class BaseController<T> {
     } catch (error) {
       console.error(`Erro ao buscar ${this.config.entityName}:`, error);
       return res.status(500).json({
-        error: `Erro interno do servidor ao buscar ${this.config.entityName}`
+        error: `Erro interno do servidor ao buscar ${this.config.entityName}`,
       });
     }
   }
@@ -319,7 +327,7 @@ export abstract class BaseController<T> {
 
       if (!id) {
         return res.status(400).json({
-          error: 'ID é obrigatório'
+          error: 'ID é obrigatório',
         });
       }
 
@@ -328,7 +336,7 @@ export abstract class BaseController<T> {
       if (!validationResult.success) {
         return res.status(400).json({
           error: 'Dados inválidos',
-          details: validationResult.error.errors
+          details: validationResult.error.errors,
         });
       }
 
@@ -337,10 +345,10 @@ export abstract class BaseController<T> {
       // Verificação se o registro existe
       const model = this.getModel();
       const existing = await model.findUnique({ where: { id } });
-      
+
       if (!existing) {
         return res.status(404).json({
-          error: `${this.config.entityName} não encontrado`
+          error: `${this.config.entityName} não encontrado`,
         });
       }
 
@@ -349,24 +357,24 @@ export abstract class BaseController<T> {
       if (duplicateErrors.length > 0) {
         return res.status(409).json({
           error: 'Conflito de dados',
-          details: duplicateErrors
+          details: duplicateErrors,
         });
       }
 
       // Atualização do registro
       const updated = await model.update({
         where: { id },
-        data
+        data,
       });
 
       return res.json({
         message: `${this.config.entityName} atualizado com sucesso`,
-        data: updated
+        data: updated,
       });
     } catch (error) {
       console.error(`Erro ao atualizar ${this.config.entityName}:`, error);
       return res.status(500).json({
-        error: `Erro interno do servidor ao atualizar ${this.config.entityName}`
+        error: `Erro interno do servidor ao atualizar ${this.config.entityName}`,
       });
     }
   }
@@ -380,16 +388,16 @@ export abstract class BaseController<T> {
 
       if (!id) {
         return res.status(400).json({
-          error: 'ID é obrigatório'
+          error: 'ID é obrigatório',
         });
       }
 
       const model = this.getModel();
       const existing = await model.findUnique({ where: { id } });
-      
+
       if (!existing) {
         return res.status(404).json({
-          error: `${this.config.entityName} não encontrado`
+          error: `${this.config.entityName} não encontrado`,
         });
       }
 
@@ -397,24 +405,24 @@ export abstract class BaseController<T> {
       if ('active' in existing) {
         await model.update({
           where: { id },
-          data: { active: false }
+          data: { active: false },
         });
-        
+
         return res.json({
-          message: `${this.config.entityName} desativado com sucesso`
+          message: `${this.config.entityName} desativado com sucesso`,
         });
       } else {
         // Hard delete
         await model.delete({ where: { id } });
-        
+
         return res.json({
-          message: `${this.config.entityName} removido com sucesso`
+          message: `${this.config.entityName} removido com sucesso`,
         });
       }
     } catch (error) {
       console.error(`Erro ao remover ${this.config.entityName}:`, error);
       return res.status(500).json({
-        error: `Erro interno do servidor ao remover ${this.config.entityName}`
+        error: `Erro interno do servidor ao remover ${this.config.entityName}`,
       });
     }
   }
@@ -428,38 +436,41 @@ export abstract class BaseController<T> {
 
       if (!id) {
         return res.status(400).json({
-          error: 'ID é obrigatório'
+          error: 'ID é obrigatório',
         });
       }
 
       const model = this.getModel();
       const existing = await model.findUnique({ where: { id } });
-      
+
       if (!existing) {
         return res.status(404).json({
-          error: `${this.config.entityName} não encontrado`
+          error: `${this.config.entityName} não encontrado`,
         });
       }
 
       if (!('active' in existing)) {
         return res.status(400).json({
-          error: `${this.config.entityName} não possui controle de status`
+          error: `${this.config.entityName} não possui controle de status`,
         });
       }
 
       const updated = await model.update({
         where: { id },
-        data: { active: !existing.active }
+        data: { active: !existing.active },
       });
 
       return res.json({
         message: `${this.config.entityName} ${updated.active ? 'ativado' : 'desativado'} com sucesso`,
-        data: updated
+        data: updated,
       });
     } catch (error) {
-      console.error(`Erro ao alterar status do ${this.config.entityName}:`, error);
+      console.error(
+        `Erro ao alterar status do ${this.config.entityName}:`,
+        error,
+      );
       return res.status(500).json({
-        error: `Erro interno do servidor ao alterar status do ${this.config.entityName}`
+        error: `Erro interno do servidor ao alterar status do ${this.config.entityName}`,
       });
     }
   }

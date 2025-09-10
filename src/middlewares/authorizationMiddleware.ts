@@ -22,9 +22,8 @@ export function authorize(options: AuthorizeOptions | PermissaoTipo) {
       }
 
       // Se opções foram passadas como string, converter para objeto
-      const authorizeOptions: AuthorizeOptions = typeof options === 'string' 
-        ? { permission: options }
-        : options;
+      const authorizeOptions: AuthorizeOptions =
+        typeof options === 'string' ? { permission: options } : options;
 
       const { permission, resource, allowSameUser } = authorizeOptions;
 
@@ -38,7 +37,7 @@ export function authorize(options: AuthorizeOptions | PermissaoTipo) {
         userId,
         permission,
         unidade: userUnidade as any,
-        resourceId: req.params.id
+        resourceId: req.params.id,
       });
 
       if (!hasPermission) {
@@ -52,10 +51,14 @@ export function authorize(options: AuthorizeOptions | PermissaoTipo) {
           ipAddress: req.ip,
           userAgent: req.get('User-Agent'),
           success: false,
-          details: { permission, reason: 'PERMISSION_DENIED' }
+          details: { permission, reason: 'PERMISSION_DENIED' },
         });
 
-        throw new AppError('Acesso negado: permissão insuficiente', 403, 'PERMISSION_DENIED');
+        throw new AppError(
+          'Acesso negado: permissão insuficiente',
+          403,
+          'PERMISSION_DENIED',
+        );
       }
 
       // Log do acesso autorizado
@@ -68,7 +71,7 @@ export function authorize(options: AuthorizeOptions | PermissaoTipo) {
         ipAddress: req.ip,
         userAgent: req.get('User-Agent'),
         success: true,
-        details: { permission }
+        details: { permission },
       });
 
       next();
@@ -91,17 +94,17 @@ export function authorizeAny(permissions: PermissaoTipo[]) {
       }
 
       // Verificar se tem pelo menos uma permissão
-      const permissionChecks = permissions.map(permission =>
+      const permissionChecks = permissions.map((permission) =>
         PermissionService.hasPermission({
           userId,
           permission,
           unidade: userUnidade as any,
-          resourceId: req.params.id
-        })
+          resourceId: req.params.id,
+        }),
       );
 
       const results = await Promise.all(permissionChecks);
-      const hasAnyPermission = results.some(result => result);
+      const hasAnyPermission = results.some((result) => result);
 
       if (!hasAnyPermission) {
         await PermissionService.logAccess({
@@ -113,10 +116,14 @@ export function authorizeAny(permissions: PermissaoTipo[]) {
           ipAddress: req.ip,
           userAgent: req.get('User-Agent'),
           success: false,
-          details: { permissions, reason: 'INSUFFICIENT_PERMISSIONS' }
+          details: { permissions, reason: 'INSUFFICIENT_PERMISSIONS' },
         });
 
-        throw new AppError('Acesso negado: permissões insuficientes', 403, 'INSUFFICIENT_PERMISSIONS');
+        throw new AppError(
+          'Acesso negado: permissões insuficientes',
+          403,
+          'INSUFFICIENT_PERMISSIONS',
+        );
       }
 
       next();
@@ -139,17 +146,17 @@ export function authorizeAll(permissions: PermissaoTipo[]) {
       }
 
       // Verificar se tem todas as permissões
-      const permissionChecks = permissions.map(permission =>
+      const permissionChecks = permissions.map((permission) =>
         PermissionService.hasPermission({
           userId,
           permission,
           unidade: userUnidade as any,
-          resourceId: req.params.id
-        })
+          resourceId: req.params.id,
+        }),
       );
 
       const results = await Promise.all(permissionChecks);
-      const hasAllPermissions = results.every(result => result);
+      const hasAllPermissions = results.every((result) => result);
 
       if (!hasAllPermissions) {
         await PermissionService.logAccess({
@@ -161,10 +168,14 @@ export function authorizeAll(permissions: PermissaoTipo[]) {
           ipAddress: req.ip,
           userAgent: req.get('User-Agent'),
           success: false,
-          details: { permissions, reason: 'MISSING_REQUIRED_PERMISSIONS' }
+          details: { permissions, reason: 'MISSING_REQUIRED_PERMISSIONS' },
         });
 
-        throw new AppError('Acesso negado: nem todas as permissões necessárias foram encontradas', 403, 'MISSING_REQUIRED_PERMISSIONS');
+        throw new AppError(
+          'Acesso negado: nem todas as permissões necessárias foram encontradas',
+          403,
+          'MISSING_REQUIRED_PERMISSIONS',
+        );
       }
 
       next();
@@ -189,7 +200,7 @@ export function filterByPermissions() {
       // Obter todas as permissões do usuário
       const userPermissions = await PermissionService.getUserPermissions(
         userId,
-        userUnidade as any
+        userUnidade as any,
       );
 
       // Adicionar permissões ao request para uso nos controllers
@@ -208,7 +219,7 @@ export function filterByPermissions() {
 export async function checkPermission(
   req: Request,
   permission: PermissaoTipo,
-  resourceId?: string
+  resourceId?: string,
 ): Promise<boolean> {
   const { userId, userUnidade } = req;
 
@@ -220,6 +231,6 @@ export async function checkPermission(
     userId,
     permission,
     unidade: userUnidade as any,
-    resourceId
+    resourceId,
   });
 }

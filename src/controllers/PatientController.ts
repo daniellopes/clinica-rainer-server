@@ -1,14 +1,15 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { AppError } from '../middlewares/errorHandler';
-import { 
-  createPatientSchema, 
-  updatePatientSchema, 
-  listPatientsSchema, 
+import { ErrorHandler } from '../utils/errorHandler';
+import {
+  createPatientSchema,
+  updatePatientSchema,
+  listPatientsSchema,
   getPatientByIdSchema,
   CreatePatientData,
   UpdatePatientData,
-  ListPatientsQuery 
+  ListPatientsQuery,
 } from '../schemas/patient.schema';
 
 const prisma = new PrismaClient();
@@ -19,25 +20,26 @@ export class PatientController {
     try {
       // Validar query parameters
       const validatedQuery = listPatientsSchema.parse(req.query);
-      const { page, limit, search, unidade, status, orderBy, orderDirection } = validatedQuery;
+      const { page, limit, search, unidade, status, orderBy, orderDirection } =
+        validatedQuery;
 
       // Construir filtros dinâmicos
       const where: any = {};
-      
+
       if (search) {
         where.OR = [
           { nome: { contains: search, mode: 'insensitive' } },
           { cpf: { contains: search } },
           { telefone: { contains: search } },
           { email: { contains: search, mode: 'insensitive' } },
-          { prontuario: { contains: search } }
+          { prontuario: { contains: search } },
         ];
       }
-      
+
       if (unidade) {
         where.unidade = unidade;
       }
-      
+
       // Se foi especificado um status, usar o status especificado
       if (status) {
         where.status = status;
@@ -71,12 +73,12 @@ export class PatientController {
               select: {
                 agendamentos: true,
                 consultas: true,
-                convenios: true
-              }
-            }
-          }
+                convenios: true,
+              },
+            },
+          },
         }),
-        prisma.patient.count({ where })
+        prisma.patient.count({ where }),
       ]);
 
       const totalPages = Math.ceil(totalCount / limit);
@@ -90,16 +92,16 @@ export class PatientController {
           totalCount,
           totalPages,
           hasNext: page < totalPages,
-          hasPrev: page > 1
-        }
+          hasPrev: page > 1,
+        },
       });
-
-    } catch (error: any) {
-      console.error('Erro ao listar pacientes:', error);
-      if (error.name === 'ZodError') {
-        throw new AppError('Dados de consulta inválidos: ' + error.errors.map((e: any) => e.message).join(', '), 400);
-      }
-      throw new AppError('Erro ao listar pacientes', 500);
+    } catch (error: unknown) {
+      return ErrorHandler.handleError(
+        error,
+        res,
+        'PatientController.list',
+        'Erro ao listar pacientes'
+      );
     }
   }
 
@@ -113,10 +115,10 @@ export class PatientController {
         include: {
           convenios: {
             where: { ativo: true },
-            orderBy: { createdAt: 'desc' }
+            orderBy: { createdAt: 'desc' },
           },
           parentes: {
-            orderBy: { nome: 'asc' }
+            orderBy: { nome: 'asc' },
           },
           agendamentos: {
             take: 5,
@@ -125,17 +127,17 @@ export class PatientController {
               id: true,
               dataHora: true,
               status: true,
-              observacoes: true
-            }
+              observacoes: true,
+            },
           },
           _count: {
             select: {
               agendamentos: true,
               consultas: true,
-              transacoes: true
-            }
-          }
-        }
+              transacoes: true,
+            },
+          },
+        },
       });
 
       if (!patient) {
@@ -144,18 +146,15 @@ export class PatientController {
 
       return res.json({
         success: true,
-        data: patient
+        data: patient,
       });
-
-    } catch (error: any) {
-      console.error('Erro ao buscar paciente:', error);
-      if (error.name === 'ZodError') {
-        throw new AppError('ID de paciente inválido', 400);
-      }
-      if (error instanceof AppError) {
-        throw error;
-      }
-      throw new AppError('Erro ao buscar paciente', 500);
+    } catch (error: unknown) {
+      return ErrorHandler.handleError(
+        error,
+        res,
+        'PatientController.getById',
+        'Erro ao buscar paciente'
+      );
     }
   }
 
@@ -164,22 +163,27 @@ export class PatientController {
     try {
       const validatedData = createPatientSchema.parse(req.body);
 
-
       // Verificar se CPF já existe
       const existingPatient = await prisma.patient.findUnique({
-        where: { cpf: validatedData.cpf.replace(/[^\d]/g, '') }
+        where: { cpf: validatedData.cpf.replace(/[^\d]/g, '') },
       });
       if (existingPatient) {
-        throw new AppError('Já existe um paciente cadastrado com este CPF', 400);
+        throw new AppError(
+          'Já existe um paciente cadastrado com este CPF',
+          400,
+        );
       }
 
       // Verificar se e-mail já existe (se informado)
       if (validatedData.email) {
         const existingEmail = await prisma.patient.findUnique({
-          where: { email: validatedData.email }
+          where: { email: validatedData.email },
         });
         if (existingEmail) {
-          throw new AppError('Já existe um paciente cadastrado com este e-mail', 400);
+          throw new AppError(
+            'Já existe um paciente cadastrado com este e-mail',
+            400,
+          );
         }
       }
 
@@ -190,22 +194,22 @@ export class PatientController {
         const lastPatient = await prisma.patient.findFirst({
           where: {
             prontuario: {
-              startsWith: year.toString()
-            }
+              startsWith: year.toString(),
+            },
           },
-          orderBy: { prontuario: 'desc' }
+          orderBy: { prontuario: 'desc' },
         });
 
-        const nextNumber = lastPatient 
-          ? parseInt(lastPatient.prontuario.slice(-4)) + 1 
+        const nextNumber = lastPatient
+          ? parseInt(lastPatient.prontuario.slice(-4)) + 1
           : 1;
-        
+
         prontuario = `${year}${nextNumber.toString().padStart(4, '0')}`;
       }
 
       // Verificar se prontuário já existe
       const existingProntuario = await prisma.patient.findUnique({
-        where: { prontuario }
+        where: { prontuario },
       });
 
       if (existingProntuario) {
@@ -232,14 +236,26 @@ export class PatientController {
         nascimento: nascimentoDate,
         prontuario,
         unidade: req.userUnidade as any, // Usar a unidade do usuário logado
-        altura: validatedData.altura && typeof validatedData.altura === 'number' ? validatedData.altura : 
-                validatedData.altura && typeof validatedData.altura === 'string' ? parseFloat(validatedData.altura) : null,
-        peso: validatedData.peso && typeof validatedData.peso === 'number' ? validatedData.peso : 
-              validatedData.peso && typeof validatedData.peso === 'string' ? parseFloat(validatedData.peso) : null,
-        imc: validatedData.imc && typeof validatedData.imc === 'number' ? validatedData.imc : 
-             validatedData.imc && typeof validatedData.imc === 'string' ? parseFloat(validatedData.imc) : null,
+        altura:
+          validatedData.altura && typeof validatedData.altura === 'number'
+            ? validatedData.altura
+            : validatedData.altura && typeof validatedData.altura === 'string'
+              ? parseFloat(validatedData.altura)
+              : null,
+        peso:
+          validatedData.peso && typeof validatedData.peso === 'number'
+            ? validatedData.peso
+            : validatedData.peso && typeof validatedData.peso === 'string'
+              ? parseFloat(validatedData.peso)
+              : null,
+        imc:
+          validatedData.imc && typeof validatedData.imc === 'number'
+            ? validatedData.imc
+            : validatedData.imc && typeof validatedData.imc === 'string'
+              ? parseFloat(validatedData.imc)
+              : null,
         foto: validatedData.foto === '' ? null : validatedData.foto,
-        email: validatedData.email === '' ? null : validatedData.email
+        email: validatedData.email === '' ? null : validatedData.email,
       };
 
       // Criar paciente
@@ -250,23 +266,28 @@ export class PatientController {
             select: {
               agendamentos: true,
               consultas: true,
-              convenios: true
-            }
-          }
-        }
+              convenios: true,
+            },
+          },
+        },
       });
 
       return res.status(201).json({
         success: true,
         message: 'Paciente criado com sucesso',
-        data: patient
+        data: patient,
       });
-
     } catch (error: any) {
       if (error.name === 'ZodError') {
-        throw new AppError('Dados inválidos: ' + error.errors.map((e: any) => `${e.path.join('.')}: ${e.message}`).join(', '), 400);
+        throw new AppError(
+          'Dados inválidos: ' +
+            error.errors
+              .map((e: any) => `${e.path.join('.')}: ${e.message}`)
+              .join(', '),
+          400,
+        );
       }
-      
+
       if (error.code === 'P2002') {
         if (error.meta?.target?.includes('cpf')) {
           throw new AppError('CPF já cadastrado', 400);
@@ -275,11 +296,11 @@ export class PatientController {
           throw new AppError('Prontuário já existe', 400);
         }
       }
-      
+
       if (error instanceof AppError) {
         throw error;
       }
-      
+
       throw new AppError('Erro ao criar paciente', 500);
     }
   }
@@ -288,25 +309,24 @@ export class PatientController {
   async update(req: Request, res: Response) {
     try {
       const { id } = getPatientByIdSchema.parse(req.params);
-      
+
       // Validar apenas os dados do body (sem o id)
       const validatedData = createPatientSchema.partial().parse(req.body);
 
       // Verificar se paciente existe
       const existingPatient = await prisma.patient.findUnique({
-        where: { id }
+        where: { id },
       });
 
       if (!existingPatient) {
         throw new AppError('Paciente não encontrado', 404);
       }
 
-
       // Se está atualizando CPF, verificar se não existe em outro paciente
       if (validatedData.cpf) {
         const cpfClean = validatedData.cpf.replace(/[^\d]/g, '');
         const patientWithCpf = await prisma.patient.findUnique({
-          where: { cpf: cpfClean }
+          where: { cpf: cpfClean },
         });
         if (patientWithCpf && patientWithCpf.id !== id) {
           throw new AppError('CPF já cadastrado em outro paciente', 400);
@@ -316,17 +336,23 @@ export class PatientController {
       // Se está atualizando e-mail, verificar se não existe em outro paciente
       if (validatedData.email) {
         const patientWithEmail = await prisma.patient.findUnique({
-          where: { email: validatedData.email }
+          where: { email: validatedData.email },
         });
         if (patientWithEmail && patientWithEmail.id !== id) {
-          throw new AppError('Já existe um paciente cadastrado com este e-mail', 400);
+          throw new AppError(
+            'Já existe um paciente cadastrado com este e-mail',
+            400,
+          );
         }
       }
 
       // Se está atualizando prontuário, verificar se não existe
-      if (validatedData.prontuario && validatedData.prontuario !== existingPatient.prontuario) {
+      if (
+        validatedData.prontuario &&
+        validatedData.prontuario !== existingPatient.prontuario
+      ) {
         const patientWithProntuario = await prisma.patient.findUnique({
-          where: { prontuario: validatedData.prontuario }
+          where: { prontuario: validatedData.prontuario },
         });
 
         if (patientWithProntuario && patientWithProntuario.id !== id) {
@@ -371,60 +397,31 @@ export class PatientController {
         data: processedData,
         include: {
           convenios: {
-            where: { ativo: true }
+            where: { ativo: true },
           },
           parentes: true,
           _count: {
             select: {
               agendamentos: true,
               consultas: true,
-              transacoes: true
-            }
-          }
-        }
+              transacoes: true,
+            },
+          },
+        },
       });
 
       return res.json({
         success: true,
         message: 'Paciente atualizado com sucesso',
-        data: updatedPatient
+        data: updatedPatient,
       });
-
-    } catch (error: any) {
-      console.error('Erro ao atualizar paciente:', error);
-      
-      if (error.name === 'ZodError') {
-        return res.status(400).json({
-          error: 'Dados inválidos',
-          code: 'VALIDATION_ERROR',
-          details: error.errors.map((err: any) => ({
-            field: err.path.join('.'),
-            message: err.message,
-            received: err.received,
-            expected: err.expected,
-            code: err.code
-          })),
-          timestamp: new Date().toISOString()
-        });
-      }
-      
-      if (error.code === 'P2002') {
-        if (error.meta?.target?.includes('cpf')) {
-          throw new AppError('CPF já cadastrado', 400);
-        }
-        if (error.meta?.target?.includes('prontuario')) {
-          throw new AppError('Prontuário já existe', 400);
-        }
-        if (error.meta?.target?.includes('email')) {
-          throw new AppError('Já existe um paciente cadastrado com este e-mail', 400);
-        }
-      }
-      
-      if (error instanceof AppError) {
-        throw error;
-      }
-      
-      throw new AppError('Erro ao atualizar paciente', 500);
+    } catch (error: unknown) {
+      return ErrorHandler.handleError(
+        error,
+        res,
+        'PatientController.update',
+        'Erro ao atualizar paciente'
+      );
     }
   }
 
@@ -441,10 +438,10 @@ export class PatientController {
             select: {
               agendamentos: true,
               consultas: true,
-              transacoes: true
-            }
-          }
-        }
+              transacoes: true,
+            },
+          },
+        },
       });
 
       if (!existingPatient) {
@@ -456,25 +453,28 @@ export class PatientController {
         where: {
           patientId: id,
           dataHora: {
-            gte: new Date()
+            gte: new Date(),
           },
           status: {
-            in: ['AGENDADO', 'CONFIRMADO']
-          }
-        }
+            in: ['AGENDADO', 'CONFIRMADO'],
+          },
+        },
       });
 
       if (futureAppointments > 0) {
-        throw new AppError('Não é possível excluir paciente com agendamentos futuros', 400);
+        throw new AppError(
+          'Não é possível excluir paciente com agendamentos futuros',
+          400,
+        );
       }
 
       // Fazer soft delete (marcar como inativo)
       const deletedPatient = await prisma.patient.update({
         where: { id },
-        data: { 
+        data: {
           status: 'INATIVO',
-          updatedAt: new Date()
-        }
+          updatedAt: new Date(),
+        },
       });
 
       return res.json({
@@ -483,22 +483,16 @@ export class PatientController {
         data: {
           id: deletedPatient.id,
           nome: deletedPatient.nome,
-          status: deletedPatient.status
-        }
+          status: deletedPatient.status,
+        },
       });
-
-    } catch (error: any) {
-      console.error('Erro ao excluir paciente:', error);
-      
-      if (error.name === 'ZodError') {
-        throw new AppError('ID de paciente inválido', 400);
-      }
-      
-      if (error instanceof AppError) {
-        throw error;
-      }
-      
-      throw new AppError('Erro ao excluir paciente', 500);
+    } catch (error: unknown) {
+      return ErrorHandler.handleError(
+        error,
+        res,
+        'PatientController.delete',
+        'Erro ao excluir paciente'
+      );
     }
   }
 
@@ -521,12 +515,15 @@ export class PatientController {
       return res.json({
         success: true,
         data: birthdays,
-        message: `${(birthdays as any[]).length} aniversariante(s) hoje`
+        message: `${(birthdays as any[]).length} aniversariante(s) hoje`,
       });
-
-    } catch (error: any) {
-      console.error('Erro ao buscar aniversariantes:', error);
-      throw new AppError('Erro ao buscar aniversariantes', 500);
+    } catch (error: unknown) {
+      return ErrorHandler.handleError(
+        error,
+        res,
+        'PatientController.getBirthdays',
+        'Erro ao buscar aniversariantes'
+      );
     }
   }
 
@@ -546,8 +543,8 @@ export class PatientController {
           originalname: req.file.originalname,
           mimetype: req.file.mimetype,
           size: req.file.size,
-          data: req.file.buffer // Armazena o conteúdo binário do arquivo
-        } as any
+          data: req.file.buffer, // Armazena o conteúdo binário do arquivo
+        } as any,
       });
 
       return res.status(201).json({
@@ -558,11 +555,14 @@ export class PatientController {
           originalname: document.originalname,
           mimetype: document.mimetype,
           size: document.size,
-          uploadedAt: document.uploadedAt
-        }
+          uploadedAt: document.uploadedAt,
+        },
       });
     } catch (error: any) {
-      throw new AppError('Erro ao fazer upload do documento: ' + error.message, 500);
+      throw new AppError(
+        'Erro ao fazer upload do documento: ' + error.message,
+        500,
+      );
     }
   }
 
@@ -572,7 +572,7 @@ export class PatientController {
       const { id } = req.params;
       const documents = await prisma.patientDocument.findMany({
         where: { patientId: id },
-        orderBy: { uploadedAt: 'desc' }
+        orderBy: { uploadedAt: 'desc' },
       });
       return res.status(200).json({ success: true, documents });
     } catch (error: any) {
@@ -584,15 +584,22 @@ export class PatientController {
   async downloadDocument(req: Request, res: Response) {
     try {
       const { documentId } = req.params;
-      const document: any = await prisma.patientDocument.findUnique({ where: { id: documentId } });
+      const document: any = await prisma.patientDocument.findUnique({
+        where: { id: documentId },
+      });
       if (!document) {
-        console.error(`[downloadDocument] Documento não encontrado: id=${documentId}`);
+        console.error(
+          `[downloadDocument] Documento não encontrado: id=${documentId}`,
+        );
         return res.status(404).json({ error: 'Documento não encontrado' });
       }
 
       // Define headers para download
       res.setHeader('Content-Type', document.mimetype);
-      res.setHeader('Content-Disposition', `attachment; filename="${document.originalname}"`);
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="${document.originalname}"`,
+      );
       res.setHeader('Content-Length', document.size.toString());
 
       // Envia o conteúdo binário do banco

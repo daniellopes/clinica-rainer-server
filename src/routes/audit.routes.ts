@@ -15,13 +15,21 @@ router.use(checkUnidadeMiddleware);
  */
 router.get('/logs', async (req, res, next) => {
   try {
-    const { userId, resource, action, startDate, endDate, page = 1, limit = 50 } = req.query;
+    const {
+      userId,
+      resource,
+      action,
+      startDate,
+      endDate,
+      page = 1,
+      limit = 50,
+    } = req.query;
     const userUnidade = req.headers['x-unidade'] as string;
 
     const filters: any = {
       unidade: userUnidade,
       page: Number(page),
-      limit: Number(limit)
+      limit: Number(limit),
     };
 
     if (userId) filters.userId = userId as string;
@@ -35,7 +43,7 @@ router.get('/logs', async (req, res, next) => {
     res.json({
       success: true,
       data: result.logs,
-      pagination: result.pagination
+      pagination: result.pagination,
     });
   } catch (error) {
     next(error);
@@ -56,13 +64,13 @@ router.get('/users/:userId/logs', async (req, res, next) => {
       userId,
       unidade: userUnidade,
       page: Number(page),
-      limit: Number(limit)
+      limit: Number(limit),
     });
 
     res.json({
       success: true,
       data: result.logs,
-      pagination: result.pagination
+      pagination: result.pagination,
     });
   } catch (error) {
     next(error);
@@ -83,7 +91,7 @@ router.get('/resources/:resource/logs', async (req, res, next) => {
       resource,
       unidade: userUnidade,
       page: Number(page),
-      limit: Number(limit)
+      limit: Number(limit),
     };
 
     if (resourceId) filters.resourceId = resourceId as string;
@@ -93,7 +101,7 @@ router.get('/resources/:resource/logs', async (req, res, next) => {
     res.json({
       success: true,
       data: result.logs,
-      pagination: result.pagination
+      pagination: result.pagination,
     });
   } catch (error) {
     next(error);
@@ -112,7 +120,7 @@ router.get('/reports/activity', async (req, res, next) => {
     if (!startDate || !endDate) {
       return res.status(400).json({
         success: false,
-        error: 'Período obrigatório (startDate e endDate)'
+        error: 'Período obrigatório (startDate e endDate)',
       });
     }
 
@@ -120,32 +128,35 @@ router.get('/reports/activity', async (req, res, next) => {
       unidade: userUnidade,
       startDate: new Date(startDate as string),
       endDate: new Date(endDate as string),
-      limit: 10000 // Buscar todos para estatísticas
+      limit: 10000, // Buscar todos para estatísticas
     });
 
     // Calcular estatísticas
     const logs = result.logs;
-    const uniqueUsers = new Set(logs.map(log => log.userId)).size;
-    const failedAttempts = logs.filter(log => !log.success).length;
-    const successRate = logs.length > 0 ? ((logs.length - failedAttempts) / logs.length * 100).toFixed(2) : '0';
+    const uniqueUsers = new Set(logs.map((log) => log.userId)).size;
+    const failedAttempts = logs.filter((log) => !log.success).length;
+    const successRate =
+      logs.length > 0
+        ? (((logs.length - failedAttempts) / logs.length) * 100).toFixed(2)
+        : '0';
 
     // Top ações
     const actionCounts: Record<string, number> = {};
-    logs.forEach(log => {
+    logs.forEach((log) => {
       actionCounts[log.action] = (actionCounts[log.action] || 0) + 1;
     });
     const topActions = Object.entries(actionCounts)
-      .sort(([,a], [,b]) => b - a)
+      .sort(([, a], [, b]) => b - a)
       .slice(0, 10)
       .map(([action, count]) => ({ action, count }));
 
     // Top recursos
     const resourceCounts: Record<string, number> = {};
-    logs.forEach(log => {
+    logs.forEach((log) => {
       resourceCounts[log.resource] = (resourceCounts[log.resource] || 0) + 1;
     });
     const topResources = Object.entries(resourceCounts)
-      .sort(([,a], [,b]) => b - a)
+      .sort(([, a], [, b]) => b - a)
       .slice(0, 10)
       .map(([resource, count]) => ({ resource, count }));
 
@@ -154,17 +165,17 @@ router.get('/reports/activity', async (req, res, next) => {
       data: {
         period: {
           startDate,
-          endDate
+          endDate,
         },
         statistics: {
           totalLogs: logs.length,
           uniqueUsers,
           failedAttempts,
-          successRate
+          successRate,
         },
         topActions,
-        topResources
-      }
+        topResources,
+      },
     });
   } catch (error) {
     next(error);

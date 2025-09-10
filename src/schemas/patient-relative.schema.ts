@@ -3,7 +3,7 @@ import { z } from 'zod';
 // Enum para tipos de relacionamento
 export const TipoRelacionamentoEnum = z.enum([
   'PAI',
-  'MAE', 
+  'MAE',
   'RESPONSAVEL_LEGAL',
   'CONJUGE',
   'FILHO',
@@ -18,7 +18,7 @@ export const TipoRelacionamentoEnum = z.enum([
   'PRIMA',
   'AMIGO',
   'CUIDADOR',
-  'OUTRO'
+  'OUTRO',
 ]);
 
 // Schema para criar dependente/responsável
@@ -38,29 +38,39 @@ export const createPatientRelativeSchema = z.object({
   isResponsavel: z.boolean().default(false),
   isDependente: z.boolean().default(false),
   isContatoEmergencia: z.boolean().default(false),
-  observacoes: z.string().optional()
+  observacoes: z.string().optional(),
 });
 
 // Schema para atualizar dependente/responsável
-export const updatePatientRelativeSchema = createPatientRelativeSchema.partial();
+export const updatePatientRelativeSchema =
+  createPatientRelativeSchema.partial();
 
 // Schema para listar dependentes/responsáveis
 export const listPatientRelativesSchema = z.object({
   page: z.string().transform(Number).default('1'),
   limit: z.string().transform(Number).default('10'),
-  tipo: z.enum(['dependentes', 'responsaveis', 'todos']).optional()
+  tipo: z.enum(['dependentes', 'responsaveis', 'todos']).optional(),
 });
 
 // Schema para parâmetros de rota
 export const patientRelativeParamsSchema = z.object({
   id: z.string().uuid('ID do paciente deve ser um UUID válido'),
-  relativeId: z.string().uuid('ID do dependente/responsável deve ser um UUID válido').optional()
+  relativeId: z
+    .string()
+    .uuid('ID do dependente/responsável deve ser um UUID válido')
+    .optional(),
 });
 
 // Tipos TypeScript
-export type CreatePatientRelativeData = z.infer<typeof createPatientRelativeSchema>;
-export type UpdatePatientRelativeData = z.infer<typeof updatePatientRelativeSchema>;
-export type ListPatientRelativesQuery = z.infer<typeof listPatientRelativesSchema>;
+export type CreatePatientRelativeData = z.infer<
+  typeof createPatientRelativeSchema
+>;
+export type UpdatePatientRelativeData = z.infer<
+  typeof updatePatientRelativeSchema
+>;
+export type ListPatientRelativesQuery = z.infer<
+  typeof listPatientRelativesSchema
+>;
 export type PatientRelativeParams = z.infer<typeof patientRelativeParamsSchema>;
 export type TipoRelacionamento = z.infer<typeof TipoRelacionamentoEnum>;
 
@@ -82,5 +92,5 @@ export const relacionamentoLabels: Record<TipoRelacionamento, string> = {
   PRIMA: 'Prima',
   AMIGO: 'Amigo',
   CUIDADOR: 'Cuidador',
-  OUTRO: 'Outro'
+  OUTRO: 'Outro',
 };

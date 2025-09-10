@@ -10,17 +10,21 @@ export interface PermissionCheck {
 }
 
 export class PermissionService {
-  
   /**
    * Verifica se um usuário tem uma permissão específica
    */
-  static async hasPermission({ userId, permission, unidade, resourceId }: PermissionCheck): Promise<boolean> {
+  static async hasPermission({
+    userId,
+    permission,
+    unidade,
+    resourceId: _resourceId,
+  }: PermissionCheck): Promise<boolean> {
     try {
       const user = await prisma.user.findUnique({
         where: { id: userId },
         include: {
-          permissoes: true
-        }
+          permissoes: true,
+        },
       });
 
       if (!user || !user.ativo) {
@@ -38,10 +42,8 @@ export class PermissionService {
       }
 
       // Verificar permissão específica do usuário
-      const userPermission = user.permissoes.find(p => 
-        p.permissao === permission && 
-        p.unidade === unidade && 
-        p.ativo
+      const userPermission = user.permissoes.find(
+        (p) => p.permissao === permission && p.unidade === unidade && p.ativo,
       );
 
       if (userPermission) {
@@ -54,8 +56,8 @@ export class PermissionService {
           role: user.role,
           permissao: permission,
           unidade,
-          ativo: true
-        }
+          ativo: true,
+        },
       });
 
       return !!rolePermission;
@@ -68,15 +70,18 @@ export class PermissionService {
   /**
    * Obtém todas as permissões de um usuário
    */
-  static async getUserPermissions(userId: string, unidade: Unidade): Promise<PermissaoTipo[]> {
+  static async getUserPermissions(
+    userId: string,
+    unidade: Unidade,
+  ): Promise<PermissaoTipo[]> {
     try {
       const user = await prisma.user.findUnique({
         where: { id: userId },
         include: {
           permissoes: {
-            where: { unidade, ativo: true }
-          }
-        }
+            where: { unidade, ativo: true },
+          },
+        },
       });
 
       if (!user || !user.ativo) {
@@ -99,16 +104,16 @@ export class PermissionService {
           where: {
             role: user.role,
             unidade,
-            ativo: true
+            ativo: true,
           },
-          select: { permissao: true }
+          select: { permissao: true },
         }),
-        user.permissoes.map(p => p.permissao)
+        user.permissoes.map((p) => p.permissao),
       ]);
 
       const allPermissions = new Set([
-        ...rolePermissions.map(rp => rp.permissao),
-        ...userPermissions
+        ...rolePermissions.map((rp) => rp.permissao),
+        ...userPermissions,
       ]);
 
       return Array.from(allPermissions);
@@ -121,25 +126,28 @@ export class PermissionService {
   /**
    * Configura permissões padrão para um role
    */
-  static async setupDefaultRolePermissions(role: UserRole, unidade: Unidade): Promise<void> {
+  static async setupDefaultRolePermissions(
+    role: UserRole,
+    unidade: Unidade,
+  ): Promise<void> {
     const permissions = this.getDefaultPermissionsByRole(role);
-    
+
     for (const permission of permissions) {
       await prisma.rolePermission.upsert({
         where: {
           role_permissao_unidade: {
             role,
             permissao: permission,
-            unidade
-          }
+            unidade,
+          },
         },
         update: { ativo: true },
         create: {
           role,
           permissao: permission,
           unidade,
-          ativo: true
-        }
+          ativo: true,
+        },
       });
     }
   }
@@ -160,7 +168,7 @@ export class PermissionService {
           PermissaoTipo.AGENDAMENTOS_VISUALIZAR,
           PermissaoTipo.AGENDAMENTOS_CRIAR,
           PermissaoTipo.AGENDAMENTOS_EDITAR,
-          // NÃO pode: editar dados básicos pacientes, agendar para outros médicos, 
+          // NÃO pode: editar dados básicos pacientes, agendar para outros médicos,
           // ver financeiro, editar estoque
         ];
 
@@ -225,36 +233,44 @@ export class PermissionService {
   /**
    * Adiciona permissão específica para um usuário
    */
-  static async grantUserPermission(userId: string, permission: PermissaoTipo, unidade: Unidade): Promise<void> {
+  static async grantUserPermission(
+    userId: string,
+    permission: PermissaoTipo,
+    unidade: Unidade,
+  ): Promise<void> {
     await prisma.userPermission.upsert({
       where: {
         userId_permissao_unidade: {
           userId,
           permissao: permission,
-          unidade
-        }
+          unidade,
+        },
       },
       update: { ativo: true },
       create: {
         userId,
         permissao: permission,
         unidade,
-        ativo: true
-      }
+        ativo: true,
+      },
     });
   }
 
   /**
    * Remove permissão específica de um usuário
    */
-  static async revokeUserPermission(userId: string, permission: PermissaoTipo, unidade: Unidade): Promise<void> {
+  static async revokeUserPermission(
+    userId: string,
+    permission: PermissaoTipo,
+    unidade: Unidade,
+  ): Promise<void> {
     await prisma.userPermission.updateMany({
       where: {
         userId,
         permissao: permission,
-        unidade
+        unidade,
       },
-      data: { ativo: false }
+      data: { ativo: false },
     });
   }
 
@@ -283,8 +299,8 @@ export class PermissionService {
           ipAddress: params.ipAddress,
           userAgent: params.userAgent,
           success: params.success ?? true,
-          details: params.details
-        }
+          details: params.details,
+        },
       });
     } catch (error) {
       console.error('Erro ao registrar log de acesso:', error);

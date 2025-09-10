@@ -18,24 +18,32 @@ const AuthController = {
   login: async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { email, senha, unidade } = req.body;
-      
+
       // Validação básica de entrada
       if (!email || !senha || !unidade) {
-        throw new AppError('Email, senha e unidade são obrigatórios', 400, 'MISSING_FIELDS');
+        throw new AppError(
+          'Email, senha e unidade são obrigatórios',
+          400,
+          'MISSING_FIELDS',
+        );
       }
 
       // Validação de formato de email
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(email)) {
-        throw new AppError('Formato de email inválido', 400, 'INVALID_EMAIL_FORMAT');
+        throw new AppError(
+          'Formato de email inválido',
+          400,
+          'INVALID_EMAIL_FORMAT',
+        );
       }
 
       // Buscar usuário no banco
       const user = await prisma.user.findFirst({
-        where: { 
+        where: {
           email: email.toLowerCase().trim(),
-          unidade 
-        }
+          unidade,
+        },
       });
 
       if (!user) {
@@ -56,17 +64,21 @@ const AuthController = {
       // Gerar token JWT
       const jwtSecret = process.env.JWT_SECRET;
       if (!jwtSecret) {
-        throw new AppError('Configuração do servidor incorreta', 500, 'SERVER_CONFIG_ERROR');
+        throw new AppError(
+          'Configuração do servidor incorreta',
+          500,
+          'SERVER_CONFIG_ERROR',
+        );
       }
 
       const token = jwt.sign(
         {
           id: user.id,
           role: user.role,
-          unidade: user.unidade
+          unidade: user.unidade,
         },
         jwtSecret,
-        { expiresIn: '1d' }
+        { expiresIn: '1d' },
       );
 
       // Remover senha dos dados do usuário
@@ -79,14 +91,13 @@ const AuthController = {
         message: 'Login realizado com sucesso',
         user: userData,
         token,
-        expiresIn: '1d'
+        expiresIn: '1d',
       });
-
     } catch (error) {
       // Log seguro de tentativa de login falhou
       const { email, unidade } = req.body;
       // Login attempt failed
-      
+
       next(error);
     }
   },
@@ -98,11 +109,15 @@ const AuthController = {
   register: async (req: Request, res: Response, next: NextFunction) => {
     try {
       // TODO: Implementar lógica de registro
-      throw new AppError('Funcionalidade em desenvolvimento', 501, 'NOT_IMPLEMENTED');
+      throw new AppError(
+        'Funcionalidade em desenvolvimento',
+        501,
+        'NOT_IMPLEMENTED',
+      );
     } catch (error) {
       next(error);
     }
-  }
+  },
 };
 
 export default AuthController;

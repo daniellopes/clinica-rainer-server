@@ -4,7 +4,7 @@ import multer from 'multer';
 const storage = multer.memoryStorage();
 
 // Configuração de filtros e limites
-export const upload = multer({ 
+export const upload = multer({
   storage,
   limits: {
     fileSize: 10 * 1024 * 1024, // 10MB max
@@ -13,18 +13,18 @@ export const upload = multer({
     // Tipos de arquivo permitidos
     const allowedTypes = [
       'image/jpeg',
-      'image/png', 
+      'image/png',
       'image/gif',
       'image/webp',
       'application/pdf',
       'application/msword',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     ];
-    
+
     if (allowedTypes.includes(file.mimetype)) {
       cb(null, true);
     } else {
       cb(null, false);
     }
-  }
+  },
 });

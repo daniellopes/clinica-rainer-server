@@ -6,45 +6,51 @@ import { checkUnidadeMiddleware } from '../middlewares/checkUnidadeMiddleware';
 const router = Router();
 
 // Listar consultas
-router.get('/', 
+router.get(
+  '/',
   authMiddleware,
   checkUnidadeMiddleware,
-  consultationController.list
+  consultationController.list,
 );
 
 // Buscar consultas em andamento
-router.get('/in-progress', 
+router.get(
+  '/in-progress',
   authMiddleware,
   checkUnidadeMiddleware,
-  consultationController.getInProgress
+  consultationController.getInProgress,
 );
 
 // Buscar consulta por ID
-router.get('/:id', 
+router.get(
+  '/:id',
   authMiddleware,
   checkUnidadeMiddleware,
-  consultationController.getById
+  consultationController.getById,
 );
 
 // Atualizar consulta
-router.put('/:id', 
+router.put(
+  '/:id',
   authMiddleware,
   checkUnidadeMiddleware,
-  consultationController.update
+  consultationController.update,
 );
 
 // Finalizar consulta
-router.patch('/:id/finish', 
+router.patch(
+  '/:id/finish',
   authMiddleware,
   checkUnidadeMiddleware,
-  consultationController.finish
+  consultationController.finish,
 );
 
 // Cancelar consulta
-router.patch('/:id/cancel', 
+router.patch(
+  '/:id/cancel',
   authMiddleware,
   checkUnidadeMiddleware,
-  consultationController.cancel
+  consultationController.cancel,
 );
 
 export default router;

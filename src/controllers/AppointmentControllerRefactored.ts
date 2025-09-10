@@ -3,6 +3,7 @@ import { PrismaClient, StatusAgendamento } from '@prisma/client';
 import { AppError } from '../middlewares/errorHandler';
 import { z } from 'zod';
 import BaseController, { BaseControllerConfig } from './BaseController';
+import { ErrorHandler } from '../utils/errorHandler';
 
 const prisma = new PrismaClient();
 
@@ -12,9 +13,13 @@ const createAppointmentSchema = z.object({
   procedureId: z.string().uuid('ID do procedimento deve ser um UUID válido'),
   medicoId: z.string().uuid('ID do médico deve ser um UUID válido').optional(),
   dataHora: z.string().datetime('Data e hora devem estar no formato ISO'),
-  duracao: z.number().int().positive('Duração deve ser um número positivo').optional(),
+  duracao: z
+    .number()
+    .int()
+    .positive('Duração deve ser um número positivo')
+    .optional(),
   observacoes: z.string().optional(),
-  tipoAgendamento: z.string().optional()
+  tipoAgendamento: z.string().optional(),
 });
 
 const updateAppointmentSchema = z.object({
@@ -25,22 +30,46 @@ const updateAppointmentSchema = z.object({
   duracao: z.number().int().positive().optional(),
   observacoes: z.string().optional(),
   tipoAgendamento: z.string().optional(),
-  status: z.enum(['AGENDADO', 'CONFIRMADO', 'EM_ATENDIMENTO', 'CONCLUIDO', 'CANCELADO', 'FALTOU']).optional(),
+  status: z
+    .enum([
+      'AGENDADO',
+      'CONFIRMADO',
+      'EM_ATENDIMENTO',
+      'CONCLUIDO',
+      'CANCELADO',
+      'FALTOU',
+    ])
+    .optional(),
   motivoCancelamento: z.string().optional(),
-  confirmado: z.boolean().optional()
+  confirmado: z.boolean().optional(),
 });
 
 const listAppointmentsSchema = z.object({
-  page: z.string().transform(val => parseInt(val)).default('1'),
-  limit: z.string().transform(val => parseInt(val)).default('10'),
+  page: z
+    .string()
+    .transform((val) => parseInt(val))
+    .default('1'),
+  limit: z
+    .string()
+    .transform((val) => parseInt(val))
+    .default('10'),
   search: z.string().optional(),
-  status: z.enum(['AGENDADO', 'CONFIRMADO', 'EM_ATENDIMENTO', 'CONCLUIDO', 'CANCELADO', 'FALTOU']).optional(),
+  status: z
+    .enum([
+      'AGENDADO',
+      'CONFIRMADO',
+      'EM_ATENDIMENTO',
+      'CONCLUIDO',
+      'CANCELADO',
+      'FALTOU',
+    ])
+    .optional(),
   medicoId: z.string().uuid().optional(),
   patientId: z.string().uuid().optional(),
   dataInicio: z.string().datetime().optional(),
   dataFim: z.string().datetime().optional(),
   orderBy: z.enum(['dataHora', 'createdAt', 'updatedAt']).default('dataHora'),
-  orderDirection: z.enum(['asc', 'desc']).default('asc')
+  orderDirection: z.enum(['asc', 'desc']).default('asc'),
 });
 
 export class AppointmentController extends BaseController<any> {
@@ -52,12 +81,12 @@ export class AppointmentController extends BaseController<any> {
       defaultSort: { field: 'dataHora', direction: 'asc' },
       defaultLimit: 10,
       filterableFields: ['status', 'medicoId', 'patientId'],
-      sortableFields: ['dataHora', 'createdAt', 'updatedAt']
+      sortableFields: ['dataHora', 'createdAt', 'updatedAt'],
     };
     super(config);
   }
 
-  protected getModel() {
+  protected getModel(): any {
     return this.prisma.appointment;
   }
 
@@ -66,7 +95,7 @@ export class AppointmentController extends BaseController<any> {
     try {
       const validatedQuery = listAppointmentsSchema.parse(req.query);
       const { userUnidade } = req;
-      
+
       const {
         page,
         limit,
@@ -77,12 +106,12 @@ export class AppointmentController extends BaseController<any> {
         dataInicio,
         dataFim,
         orderBy,
-        orderDirection
+        orderDirection,
       } = validatedQuery;
 
       // Construir filtros dinâmicos
       const where: any = {
-        unidade: userUnidade as any
+        unidade: userUnidade as any,
       };
 
       if (search) {
@@ -91,18 +120,18 @@ export class AppointmentController extends BaseController<any> {
             patient: {
               nome: {
                 contains: search,
-                mode: 'insensitive'
-              }
-            }
+                mode: 'insensitive',
+              },
+            },
           },
           {
             procedure: {
               nome: {
                 contains: search,
-                mode: 'insensitive'
-              }
-            }
-          }
+                mode: 'insensitive',
+              },
+            },
+          },
         ];
       }
 
@@ -141,8 +170,8 @@ export class AppointmentController extends BaseController<any> {
                 nome: true,
                 cpf: true,
                 telefone: true,
-                email: true
-              }
+                email: true,
+              },
             },
             procedure: {
               select: {
@@ -150,29 +179,29 @@ export class AppointmentController extends BaseController<any> {
                 nome: true,
                 valor: true,
                 duracao: true,
-                categoria: true
-              }
+                categoria: true,
+              },
             },
             medico: {
               select: {
                 id: true,
                 nome: true,
                 email: true,
-                especialidade: true
-              }
+                especialidade: true,
+              },
             },
             criadoPor: {
               select: {
                 id: true,
-                nome: true
-              }
-            }
+                nome: true,
+              },
+            },
           },
           orderBy: { [orderBy]: orderDirection },
           skip,
-          take: limit
+          take: limit,
         }),
-        this.prisma.appointment.count({ where })
+        this.prisma.appointment.count({ where }),
       ]);
 
       const totalPages = Math.ceil(total / limit);
@@ -186,32 +215,16 @@ export class AppointmentController extends BaseController<any> {
           total,
           totalPages,
           hasNext: page < totalPages,
-          hasPrev: page > 1
-        }
+          hasPrev: page > 1,
+        },
       });
-
-    } catch (error: any) {
-      console.error('Erro ao listar agendamentos:', error);
-      
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({
-          success: false,
-          error: 'Dados inválidos',
-          details: error.errors
-        });
-      }
-      
-      if (error instanceof AppError) {
-        return res.status(error.statusCode).json({
-          success: false,
-          error: error.message
-        });
-      }
-      
-      return res.status(500).json({
-        success: false,
-        error: 'Erro interno do servidor'
-      });
+    } catch (error: unknown) {
+      return ErrorHandler.handleError(
+        error,
+        res,
+        'AppointmentControllerRefactored.list',
+        'Erro ao listar agendamentos'
+      );
     }
   }
 
@@ -228,7 +241,7 @@ export class AppointmentController extends BaseController<any> {
       const appointment = await this.prisma.appointment.findFirst({
         where: {
           id,
-          unidade: userUnidade as any
+          unidade: userUnidade as any,
         },
         include: {
           patient: {
@@ -238,8 +251,8 @@ export class AppointmentController extends BaseController<any> {
               cpf: true,
               telefone: true,
               email: true,
-              endereco: true
-            }
+              endereco: true,
+            },
           },
           procedure: {
             select: {
@@ -248,31 +261,31 @@ export class AppointmentController extends BaseController<any> {
               valor: true,
               duracao: true,
               categoria: true,
-              descricao: true
-            }
+              descricao: true,
+            },
           },
           medico: {
             select: {
               id: true,
               nome: true,
               email: true,
-              especialidade: true
-            }
+              especialidade: true,
+            },
           },
           criadoPor: {
             select: {
               id: true,
-              nome: true
-            }
+              nome: true,
+            },
           },
           consulta: {
             select: {
               id: true,
               status: true,
-              dataConsulta: true
-            }
-          }
-        }
+              dataConsulta: true,
+            },
+          },
+        },
       });
 
       if (!appointment) {
@@ -281,23 +294,15 @@ export class AppointmentController extends BaseController<any> {
 
       return res.json({
         success: true,
-        data: appointment
+        data: appointment,
       });
-
-    } catch (error: any) {
-      console.error('Erro ao buscar agendamento:', error);
-      
-      if (error instanceof AppError) {
-        return res.status(error.statusCode).json({
-          success: false,
-          error: error.message
-        });
-      }
-      
-      return res.status(500).json({
-        success: false,
-        error: 'Erro interno do servidor'
-      });
+    } catch (error: unknown) {
+      return ErrorHandler.handleError(
+        error,
+        res,
+        'AppointmentControllerRefactored.getById',
+        'Erro ao buscar agendamento'
+      );
     }
   }
 
@@ -315,8 +320,8 @@ export class AppointmentController extends BaseController<any> {
       const patient = await this.prisma.patient.findFirst({
         where: {
           id: validatedData.patientId,
-          unidade: userUnidade as any
-        }
+          unidade: userUnidade as any,
+        },
       });
 
       if (!patient) {
@@ -328,8 +333,8 @@ export class AppointmentController extends BaseController<any> {
         where: {
           id: validatedData.procedureId,
           unidade: userUnidade as any,
-          ativo: true
-        }
+          ativo: true,
+        },
       });
 
       if (!procedure) {
@@ -342,8 +347,8 @@ export class AppointmentController extends BaseController<any> {
           where: {
             id: validatedData.medicoId,
             unidade: userUnidade as any,
-            ativo: true
-          }
+            ativo: true,
+          },
         });
 
         if (!medico) {
@@ -363,7 +368,7 @@ export class AppointmentController extends BaseController<any> {
           tipoAgendamento: validatedData.tipoAgendamento,
           status: 'AGENDADO',
           unidade: userUnidade as any,
-          criadoPorId: userId
+          criadoPorId: userId,
         },
         include: {
           patient: {
@@ -371,55 +376,39 @@ export class AppointmentController extends BaseController<any> {
               id: true,
               nome: true,
               cpf: true,
-              telefone: true
-            }
+              telefone: true,
+            },
           },
           procedure: {
             select: {
               id: true,
               nome: true,
               valor: true,
-              duracao: true
-            }
+              duracao: true,
+            },
           },
           medico: {
             select: {
               id: true,
               nome: true,
-              especialidade: true
-            }
-          }
-        }
+              especialidade: true,
+            },
+          },
+        },
       });
 
       return res.status(201).json({
         success: true,
         message: 'Agendamento criado com sucesso',
-        data: appointment
+        data: appointment,
       });
-
-    } catch (error: any) {
-      console.error('Erro ao criar agendamento:', error);
-      
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({
-          success: false,
-          error: 'Dados inválidos',
-          details: error.errors
-        });
-      }
-      
-      if (error instanceof AppError) {
-        return res.status(error.statusCode).json({
-          success: false,
-          error: error.message
-        });
-      }
-      
-      return res.status(500).json({
-        success: false,
-        error: 'Erro interno do servidor'
-      });
+    } catch (error: unknown) {
+      return ErrorHandler.handleError(
+        error,
+        res,
+        'AppointmentControllerRefactored.create',
+        'Erro ao criar agendamento'
+      );
     }
   }
 
@@ -437,8 +426,8 @@ export class AppointmentController extends BaseController<any> {
       const appointment = await this.prisma.appointment.findFirst({
         where: {
           id,
-          unidade: userUnidade as any
-        }
+          unidade: userUnidade as any,
+        },
       });
 
       if (!appointment) {
@@ -450,7 +439,10 @@ export class AppointmentController extends BaseController<any> {
       }
 
       if (appointment.status === 'CONCLUIDO') {
-        throw new AppError('Não é possível cancelar agendamento já concluído', 400);
+        throw new AppError(
+          'Não é possível cancelar agendamento já concluído',
+          400,
+        );
       }
 
       const updatedAppointment = await this.prisma.appointment.update({
@@ -458,30 +450,22 @@ export class AppointmentController extends BaseController<any> {
         data: {
           status: 'CANCELADO',
           motivoCancelamento,
-          updatedAt: new Date()
-        }
+          updatedAt: new Date(),
+        },
       });
 
       return res.json({
         success: true,
         message: 'Agendamento cancelado com sucesso',
-        data: updatedAppointment
+        data: updatedAppointment,
       });
-
-    } catch (error: any) {
-      console.error('Erro ao cancelar agendamento:', error);
-      
-      if (error instanceof AppError) {
-        return res.status(error.statusCode).json({
-          success: false,
-          error: error.message
-        });
-      }
-      
-      return res.status(500).json({
-        success: false,
-        error: 'Erro interno do servidor'
-      });
+    } catch (error: unknown) {
+      return ErrorHandler.handleError(
+        error,
+        res,
+        'AppointmentControllerRefactored.cancel',
+        'Erro ao cancelar agendamento'
+      );
     }
   }
 
@@ -497,8 +481,8 @@ export class AppointmentController extends BaseController<any> {
       const appointment = await this.prisma.appointment.findFirst({
         where: {
           id,
-          unidade: userUnidade as any
-        }
+          unidade: userUnidade as any,
+        },
       });
 
       if (!appointment) {
@@ -506,7 +490,10 @@ export class AppointmentController extends BaseController<any> {
       }
 
       if (appointment.status !== 'AGENDADO') {
-        throw new AppError('Apenas agendamentos com status AGENDADO podem ser confirmados', 400);
+        throw new AppError(
+          'Apenas agendamentos com status AGENDADO podem ser confirmados',
+          400,
+        );
       }
 
       const updatedAppointment = await this.prisma.appointment.update({
@@ -515,30 +502,22 @@ export class AppointmentController extends BaseController<any> {
           status: 'CONFIRMADO',
           confirmado: true,
           dataConfirmacao: new Date(),
-          updatedAt: new Date()
-        }
+          updatedAt: new Date(),
+        },
       });
 
       return res.json({
         success: true,
         message: 'Agendamento confirmado com sucesso',
-        data: updatedAppointment
+        data: updatedAppointment,
       });
-
-    } catch (error: any) {
-      console.error('Erro ao confirmar agendamento:', error);
-      
-      if (error instanceof AppError) {
-        return res.status(error.statusCode).json({
-          success: false,
-          error: error.message
-        });
-      }
-      
-      return res.status(500).json({
-        success: false,
-        error: 'Erro interno do servidor'
-      });
+    } catch (error: unknown) {
+      return ErrorHandler.handleError(
+        error,
+        res,
+        'AppointmentControllerRefactored.confirm',
+        'Erro ao confirmar agendamento'
+      );
     }
   }
 
@@ -554,8 +533,8 @@ export class AppointmentController extends BaseController<any> {
       const appointment = await this.prisma.appointment.findFirst({
         where: {
           id,
-          unidade: userUnidade as any
-        }
+          unidade: userUnidade as any,
+        },
       });
 
       if (!appointment) {
@@ -563,37 +542,32 @@ export class AppointmentController extends BaseController<any> {
       }
 
       if (appointment.status !== 'CONFIRMADO') {
-        throw new AppError('Apenas agendamentos confirmados podem iniciar consulta', 400);
+        throw new AppError(
+          'Apenas agendamentos confirmados podem iniciar consulta',
+          400,
+        );
       }
 
       const updatedAppointment = await this.prisma.appointment.update({
         where: { id },
         data: {
           status: 'EM_ATENDIMENTO',
-          updatedAt: new Date()
-        }
+          updatedAt: new Date(),
+        },
       });
 
       return res.json({
         success: true,
         message: 'Consulta iniciada com sucesso',
-        data: updatedAppointment
+        data: updatedAppointment,
       });
-
-    } catch (error: any) {
-      console.error('Erro ao iniciar consulta:', error);
-      
-      if (error instanceof AppError) {
-        return res.status(error.statusCode).json({
-          success: false,
-          error: error.message
-        });
-      }
-      
-      return res.status(500).json({
-        success: false,
-        error: 'Erro interno do servidor'
-      });
+    } catch (error: unknown) {
+      return ErrorHandler.handleError(
+        error,
+        res,
+        'AppointmentControllerRefactored.startConsultation',
+        'Erro ao iniciar consulta'
+      );
     }
   }
 
@@ -601,56 +575,63 @@ export class AppointmentController extends BaseController<any> {
     try {
       const { userUnidade } = req;
       const today = new Date();
-      const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-      const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+      const startOfDay = new Date(
+        today.getFullYear(),
+        today.getMonth(),
+        today.getDate(),
+      );
+      const endOfDay = new Date(
+        today.getFullYear(),
+        today.getMonth(),
+        today.getDate() + 1,
+      );
 
       const appointments = await this.prisma.appointment.findMany({
         where: {
           unidade: userUnidade as any,
           dataHora: {
             gte: startOfDay,
-            lt: endOfDay
-          }
+            lt: endOfDay,
+          },
         },
         include: {
           patient: {
             select: {
               id: true,
               nome: true,
-              telefone: true
-            }
+              telefone: true,
+            },
           },
           procedure: {
             select: {
               id: true,
               nome: true,
-              duracao: true
-            }
+              duracao: true,
+            },
           },
           medico: {
             select: {
               id: true,
-              nome: true
-            }
-          }
+              nome: true,
+            },
+          },
         },
         orderBy: {
-          dataHora: 'asc'
-        }
+          dataHora: 'asc',
+        },
       });
 
       return res.json({
         success: true,
-        data: appointments
+        data: appointments,
       });
-
-    } catch (error: any) {
-      console.error('Erro ao buscar agendamentos de hoje:', error);
-      
-      return res.status(500).json({
-        success: false,
-        error: 'Erro interno do servidor'
-      });
+    } catch (error: unknown) {
+      return ErrorHandler.handleError(
+        error,
+        res,
+        'AppointmentControllerRefactored.getToday',
+        'Erro ao buscar agendamentos de hoje'
+      );
     }
   }
 }

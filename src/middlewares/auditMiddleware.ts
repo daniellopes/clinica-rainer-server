@@ -19,13 +19,17 @@ interface AuthenticatedRequest extends Request {
  * Registra automaticamente todas as ações dos usuários
  */
 export const auditMiddleware = (action: string, resource: string) => {
-  return async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  return async (
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction,
+  ) => {
     try {
       const userId = req.user?.id;
       const userUnidade = req.headers['x-unidade'] as string;
       const ipAddress = req.ip || req.connection.remoteAddress;
       const userAgent = req.get('User-Agent');
-      
+
       // Capturar ID do recurso se estiver nos parâmetros
       const resourceId = req.params.id || req.body.id || null;
 
@@ -34,11 +38,11 @@ export const auditMiddleware = (action: string, resource: string) => {
         const originalJson = res.json;
         let responseLogged = false;
 
-        res.json = function(body: any) {
+        res.json = function (body: any) {
           if (!responseLogged) {
             responseLogged = true;
             const success = res.statusCode >= 200 && res.statusCode < 300;
-            
+
             // Log da atividade de forma assíncrona
             setImmediate(async () => {
               try {
@@ -57,20 +61,20 @@ export const auditMiddleware = (action: string, resource: string) => {
                       url: req.originalUrl,
                       statusCode: res.statusCode,
                       userAgent: req.get('User-Agent'),
-                      timestamp: new Date().toISOString()
-                    }
-                  }
+                      timestamp: new Date().toISOString(),
+                    },
+                  },
                 });
               } catch (error) {
                 console.error('Erro ao registrar log de auditoria:', error);
               }
             });
           }
-          
+
           return originalJson.call(this, body);
         };
       }
-      
+
       next();
     } catch (error) {
       // Não bloquear a requisição por erro de auditoria
@@ -94,7 +98,7 @@ export const logAccess = async (
     details?: any;
     ipAddress?: string;
     userAgent?: string;
-  } = {}
+  } = {},
 ) => {
   try {
     return await prisma.accessLog.create({
@@ -107,8 +111,8 @@ export const logAccess = async (
         ipAddress: options.ipAddress || null,
         userAgent: options.userAgent || null,
         success: options.success !== undefined ? options.success : true,
-        details: options.details || null
-      }
+        details: options.details || null,
+      },
     });
   } catch (error) {
     console.error('Erro ao registrar log de acesso:', error);
@@ -138,11 +142,13 @@ export const getAccessLogs = async (filters: {
     if (otherFilters.userId) whereClause.userId = otherFilters.userId;
     if (otherFilters.resource) whereClause.resource = otherFilters.resource;
     if (otherFilters.action) whereClause.action = otherFilters.action;
-    
+
     if (otherFilters.startDate || otherFilters.endDate) {
       whereClause.createdAt = {};
-      if (otherFilters.startDate) whereClause.createdAt.gte = otherFilters.startDate;
-      if (otherFilters.endDate) whereClause.createdAt.lte = otherFilters.endDate;
+      if (otherFilters.startDate)
+        whereClause.createdAt.gte = otherFilters.startDate;
+      if (otherFilters.endDate)
+        whereClause.createdAt.lte = otherFilters.endDate;
     }
 
     const [logs, total] = await Promise.all([
@@ -155,15 +161,15 @@ export const getAccessLogs = async (filters: {
               nome: true,
               email: true,
               role: true,
-              cargo: true
-            }
-          }
+              cargo: true,
+            },
+          },
         },
         orderBy: { createdAt: 'desc' },
         skip,
-        take: limit
+        take: limit,
       }),
-      prisma.accessLog.count({ where: whereClause })
+      prisma.accessLog.count({ where: whereClause }),
     ]);
 
     return {
@@ -172,8 +178,8 @@ export const getAccessLogs = async (filters: {
         page,
         limit,
         total,
-        pages: Math.ceil(total / limit)
-      }
+        pages: Math.ceil(total / limit),
+      },
     };
   } catch (error) {
     console.error('Erro ao buscar logs de acesso:', error);

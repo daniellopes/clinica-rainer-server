@@ -11,44 +11,41 @@ router.use(authMiddleware);
 
 // Rotas de permissões (apenas admins)
 router.get(
-  '/user/:userId', 
+  '/user/:userId',
   authorize(PermissaoTipo.USUARIOS_VISUALIZAR),
-  PermissionController.getUserPermissions
+  PermissionController.getUserPermissions,
 );
 
 router.post(
-  '/user/:userId/grant', 
+  '/user/:userId/grant',
   authorize(PermissaoTipo.USUARIOS_EDITAR),
-  PermissionController.grantUserPermission
+  PermissionController.grantUserPermission,
 );
 
 router.post(
-  '/user/:userId/revoke', 
+  '/user/:userId/revoke',
   authorize(PermissaoTipo.USUARIOS_EDITAR),
-  PermissionController.revokeUserPermission
+  PermissionController.revokeUserPermission,
 );
 
 router.get(
-  '/role/:role', 
+  '/role/:role',
   authorize(PermissaoTipo.SISTEMA_CONFIGURAR),
-  PermissionController.getRolePermissions
+  PermissionController.getRolePermissions,
 );
 
 router.post(
-  '/role/:role/setup', 
+  '/role/:role/setup',
   authorize(PermissaoTipo.SISTEMA_CONFIGURAR),
-  PermissionController.setupRolePermissions
+  PermissionController.setupRolePermissions,
 );
 
-router.get(
-  '/check/:permission', 
-  PermissionController.checkUserPermission
-);
+router.get('/check/:permission', PermissionController.checkUserPermission);
 
 router.get(
-  '/audit/logs', 
+  '/audit/logs',
   authorize(PermissaoTipo.SISTEMA_AUDITORIA),
-  PermissionController.getAccessLogs
+  PermissionController.getAccessLogs,
 );
 
 export default router;

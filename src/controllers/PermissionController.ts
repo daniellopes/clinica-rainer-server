@@ -6,18 +6,21 @@ import { AppError } from '../middlewares/errorHandler';
 const prisma = new PrismaClient();
 
 export class PermissionController {
-  
   /**
    * Obtém todas as permissões de um usuário específico
    */
-  static async getUserPermissions(req: Request, res: Response, next: NextFunction) {
+  static async getUserPermissions(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) {
     try {
       const { userId } = req.params;
       const { userUnidade } = req;
 
       const permissions = await PermissionService.getUserPermissions(
-        userId, 
-        userUnidade as Unidade
+        userId,
+        userUnidade as Unidade,
       );
 
       const user = await prisma.user.findUnique({
@@ -30,17 +33,16 @@ export class PermissionController {
           unidade: true,
           unidadesAcesso: true,
           especialidade: true,
-          ativo: true
-        }
+          ativo: true,
+        },
       });
 
       return res.json({
         success: true,
         user,
         permissions,
-        totalPermissions: permissions.length
+        totalPermissions: permissions.length,
       });
-
     } catch (error) {
       next(error);
     }
@@ -49,14 +51,22 @@ export class PermissionController {
   /**
    * Concede uma permissão específica a um usuário
    */
-  static async grantUserPermission(req: Request, res: Response, next: NextFunction) {
+  static async grantUserPermission(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) {
     try {
       const { userId } = req.params;
       const { permission, unidade } = req.body;
       const { userId: adminId, userUnidade } = req;
 
       if (!permission || !unidade) {
-        throw new AppError('Permissão e unidade são obrigatórias', 400, 'MISSING_FIELDS');
+        throw new AppError(
+          'Permissão e unidade são obrigatórias',
+          400,
+          'MISSING_FIELDS',
+        );
       }
 
       await PermissionService.grantUserPermission(userId, permission, unidade);
@@ -70,7 +80,7 @@ export class PermissionController {
         unidade: userUnidade as Unidade,
         ipAddress: req.ip,
         userAgent: req.get('User-Agent'),
-        details: { permission, targetUserId: userId, grantedUnidade: unidade }
+        details: { permission, targetUserId: userId, grantedUnidade: unidade },
       });
 
       return res.json({
@@ -78,9 +88,8 @@ export class PermissionController {
         message: 'Permissão concedida com sucesso',
         userId,
         permission,
-        unidade
+        unidade,
       });
-
     } catch (error) {
       next(error);
     }
@@ -89,14 +98,22 @@ export class PermissionController {
   /**
    * Revoga uma permissão específica de um usuário
    */
-  static async revokeUserPermission(req: Request, res: Response, next: NextFunction) {
+  static async revokeUserPermission(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) {
     try {
       const { userId } = req.params;
       const { permission, unidade } = req.body;
       const { userId: adminId, userUnidade } = req;
 
       if (!permission || !unidade) {
-        throw new AppError('Permissão e unidade são obrigatórias', 400, 'MISSING_FIELDS');
+        throw new AppError(
+          'Permissão e unidade são obrigatórias',
+          400,
+          'MISSING_FIELDS',
+        );
       }
 
       await PermissionService.revokeUserPermission(userId, permission, unidade);
@@ -110,7 +127,7 @@ export class PermissionController {
         unidade: userUnidade as Unidade,
         ipAddress: req.ip,
         userAgent: req.get('User-Agent'),
-        details: { permission, targetUserId: userId, revokedUnidade: unidade }
+        details: { permission, targetUserId: userId, revokedUnidade: unidade },
       });
 
       return res.json({
@@ -118,9 +135,8 @@ export class PermissionController {
         message: 'Permissão revogada com sucesso',
         userId,
         permission,
-        unidade
+        unidade,
       });
-
     } catch (error) {
       next(error);
     }
@@ -129,7 +145,11 @@ export class PermissionController {
   /**
    * Obtém as permissões padrão de um role
    */
-  static async getRolePermissions(req: Request, res: Response, next: NextFunction) {
+  static async getRolePermissions(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) {
     try {
       const { role } = req.params;
       const { userUnidade } = req;
@@ -138,24 +158,23 @@ export class PermissionController {
         where: {
           role: role as UserRole,
           unidade: userUnidade as Unidade,
-          ativo: true
+          ativo: true,
         },
         select: {
           id: true,
           permissao: true,
           ativo: true,
-          createdAt: true
-        }
+          createdAt: true,
+        },
       });
 
       return res.json({
         success: true,
         role,
         unidade: userUnidade,
-        permissions: rolePermissions.map(rp => rp.permissao),
-        totalPermissions: rolePermissions.length
+        permissions: rolePermissions.map((rp) => rp.permissao),
+        totalPermissions: rolePermissions.length,
       });
-
     } catch (error) {
       next(error);
     }
@@ -164,14 +183,18 @@ export class PermissionController {
   /**
    * Configura as permissões padrão para um role
    */
-  static async setupRolePermissions(req: Request, res: Response, next: NextFunction) {
+  static async setupRolePermissions(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) {
     try {
       const { role } = req.params;
       const { userUnidade, userId } = req;
 
       await PermissionService.setupDefaultRolePermissions(
-        role as UserRole, 
-        userUnidade as Unidade
+        role as UserRole,
+        userUnidade as Unidade,
       );
 
       // Log da ação
@@ -183,16 +206,15 @@ export class PermissionController {
         unidade: userUnidade as Unidade,
         ipAddress: req.ip,
         userAgent: req.get('User-Agent'),
-        details: { role, unidade: userUnidade }
+        details: { role, unidade: userUnidade },
       });
 
       return res.json({
         success: true,
         message: 'Permissões padrão configuradas com sucesso',
         role,
-        unidade: userUnidade
+        unidade: userUnidade,
       });
-
     } catch (error) {
       next(error);
     }
@@ -201,7 +223,11 @@ export class PermissionController {
   /**
    * Verifica se o usuário logado tem uma permissão específica
    */
-  static async checkUserPermission(req: Request, res: Response, next: NextFunction) {
+  static async checkUserPermission(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) {
     try {
       const { permission } = req.params;
       const { userId, userUnidade } = req;
@@ -211,7 +237,7 @@ export class PermissionController {
         userId: userId!,
         permission: permission as PermissaoTipo,
         unidade: userUnidade as Unidade,
-        resourceId: resourceId as string
+        resourceId: resourceId as string,
       });
 
       return res.json({
@@ -220,9 +246,8 @@ export class PermissionController {
         permission,
         unidade: userUnidade,
         hasPermission,
-        resourceId
+        resourceId,
       });
-
     } catch (error) {
       next(error);
     }
@@ -234,14 +259,14 @@ export class PermissionController {
   static async getAccessLogs(req: Request, res: Response, next: NextFunction) {
     try {
       const { userUnidade } = req;
-      const { 
-        page = '1', 
-        limit = '50', 
-        userId, 
-        resource, 
+      const {
+        page = '1',
+        limit = '50',
+        userId,
+        resource,
         action,
         startDate,
-        endDate
+        endDate,
       } = req.query;
 
       const pageNum = parseInt(page as string);
@@ -250,7 +275,7 @@ export class PermissionController {
 
       // Construir filtros
       const where: any = {
-        unidade: userUnidade as Unidade
+        unidade: userUnidade as Unidade,
       };
 
       if (userId) {
@@ -283,15 +308,15 @@ export class PermissionController {
               select: {
                 nome: true,
                 email: true,
-                role: true
-              }
-            }
+                role: true,
+              },
+            },
           },
           orderBy: { createdAt: 'desc' },
           skip,
-          take: limitNum
+          take: limitNum,
         }),
-        prisma.accessLog.count({ where })
+        prisma.accessLog.count({ where }),
       ]);
 
       const totalPages = Math.ceil(totalCount / limitNum);
@@ -305,7 +330,7 @@ export class PermissionController {
           totalCount,
           totalPages,
           hasNext: pageNum < totalPages,
-          hasPrev: pageNum > 1
+          hasPrev: pageNum > 1,
         },
         filters: {
           userId,
@@ -313,10 +338,9 @@ export class PermissionController {
           action,
           startDate,
           endDate,
-          unidade: userUnidade
-        }
+          unidade: userUnidade,
+        },
       });
-
     } catch (error) {
       next(error);
     }

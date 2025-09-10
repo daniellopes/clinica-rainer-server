@@ -17,7 +17,15 @@ const AuditController = {
    */
   listaccessLogs: async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { userId, resource, action, startDate, endDate, page = 1, limit = 50 } = req.query;
+      const {
+        userId,
+        resource,
+        action,
+        startDate,
+        endDate,
+        page = 1,
+        limit = 50,
+      } = req.query;
       const userUnidade = req.headers['x-unidade'] as string;
       const unidadeEnum = userUnidade as Unidade;
 
@@ -29,13 +37,13 @@ const AuditController = {
 
       // Construir filtros
       const filters: any = {
-        unidade: userUnidade
+        unidade: userUnidade,
       };
 
       if (userId) filters.userId = userId;
       if (resource) filters.resource = resource;
       if (action) filters.action = action;
-      
+
       if (startDate || endDate) {
         filters.createdAt = {};
         if (startDate) filters.createdAt.gte = new Date(startDate as string);
@@ -52,15 +60,15 @@ const AuditController = {
                 nome: true,
                 email: true,
                 role: true,
-                cargo: true
-              }
-            }
+                cargo: true,
+              },
+            },
           },
           orderBy: { createdAt: 'desc' },
           skip,
-          take: Number(limit)
+          take: Number(limit),
         }),
-        prisma.accessLog.count({ where: filters })
+        prisma.accessLog.count({ where: filters }),
       ]);
 
       res.json({
@@ -70,8 +78,8 @@ const AuditController = {
           page: Number(page),
           limit: Number(limit),
           total,
-          pages: Math.ceil(total / Number(limit))
-        }
+          pages: Math.ceil(total / Number(limit)),
+        },
       });
     } catch (error) {
       next(error);
@@ -83,7 +91,13 @@ const AuditController = {
    */
   createaccessLog: async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { action, resource, resourceId, success = true, details } = req.body;
+      const {
+        action,
+        resource,
+        resourceId,
+        success = true,
+        details,
+      } = req.body;
       const userId = req.userId;
       const userUnidade = req.headers['x-unidade'] as string;
       const unidadeEnum = userUnidade as Unidade;
@@ -108,22 +122,22 @@ const AuditController = {
           ipAddress,
           userAgent,
           success,
-          details
+          details,
         },
         include: {
           user: {
             select: {
               nome: true,
               email: true,
-              role: true
-            }
-          }
-        }
+              role: true,
+            },
+          },
+        },
       });
 
       res.status(201).json({
         success: true,
-        data: log
+        data: log,
       });
     } catch (error) {
       next(error);
@@ -133,7 +147,11 @@ const AuditController = {
   /**
    * Busca logs por usuário específico
    */
-  getUseraccessLogs: async (req: Request, res: Response, next: NextFunction) => {
+  getUseraccessLogs: async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) => {
     try {
       const { userId } = req.params;
       const { page = 1, limit = 50 } = req.query;
@@ -150,27 +168,27 @@ const AuditController = {
         prisma.accessLog.findMany({
           where: {
             userId,
-            unidade: unidadeEnum
+            unidade: unidadeEnum,
           },
           include: {
             user: {
               select: {
                 nome: true,
                 email: true,
-                role: true
-              }
-            }
+                role: true,
+              },
+            },
           },
           orderBy: { createdAt: 'desc' },
           skip,
-          take: Number(limit)
+          take: Number(limit),
         }),
         prisma.accessLog.count({
           where: {
             userId,
-            unidade: unidadeEnum
-          }
-        })
+            unidade: unidadeEnum,
+          },
+        }),
       ]);
 
       res.json({
@@ -180,8 +198,8 @@ const AuditController = {
           page: Number(page),
           limit: Number(limit),
           total,
-          pages: Math.ceil(total / Number(limit))
-        }
+          pages: Math.ceil(total / Number(limit)),
+        },
       });
     } catch (error) {
       next(error);
@@ -191,7 +209,11 @@ const AuditController = {
   /**
    * Busca logs por recurso específico
    */
-  getResourceaccessLogs: async (req: Request, res: Response, next: NextFunction) => {
+  getResourceaccessLogs: async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) => {
     try {
       const { resource, resourceId } = req.params;
       const { page = 1, limit = 50 } = req.query;
@@ -205,7 +227,7 @@ const AuditController = {
 
       const filters: any = {
         resource,
-        unidade: userUnidade
+        unidade: userUnidade,
       };
 
       if (resourceId) {
@@ -220,15 +242,15 @@ const AuditController = {
               select: {
                 nome: true,
                 email: true,
-                role: true
-              }
-            }
+                role: true,
+              },
+            },
           },
           orderBy: { createdAt: 'desc' },
           skip,
-          take: Number(limit)
+          take: Number(limit),
         }),
-        prisma.accessLog.count({ where: filters })
+        prisma.accessLog.count({ where: filters }),
       ]);
 
       res.json({
@@ -238,8 +260,8 @@ const AuditController = {
           page: Number(page),
           limit: Number(limit),
           total,
-          pages: Math.ceil(total / Number(limit))
-        }
+          pages: Math.ceil(total / Number(limit)),
+        },
       });
     } catch (error) {
       next(error);
@@ -249,7 +271,11 @@ const AuditController = {
   /**
    * Relatório de atividades por período
    */
-  getActivityReport: async (req: Request, res: Response, next: NextFunction) => {
+  getActivityReport: async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) => {
     try {
       const { startDate, endDate } = req.query;
       const userUnidade = req.headers['x-unidade'] as string;
@@ -260,89 +286,91 @@ const AuditController = {
       }
 
       if (!startDate || !endDate) {
-        throw new AppError('Período obrigatório (startDate e endDate)', 400, 'MISSING_PERIOD');
+        throw new AppError(
+          'Período obrigatório (startDate e endDate)',
+          400,
+          'MISSING_PERIOD',
+        );
       }
 
       const filters = {
         unidade: unidadeEnum,
         createdAt: {
           gte: new Date(startDate as string),
-          lte: new Date(endDate as string)
-        }
+          lte: new Date(endDate as string),
+        },
       };
 
       // Estatísticas gerais
-      const [
-        totalLogs,
-        uniqueUsers,
-        topActions,
-        topResources,
-        failedAttempts
-      ] = await Promise.all([
-        // Total de logs
-        prisma.accessLog.count({ where: filters }),
+      const [totalLogs, uniqueUsers, topActions, topResources, failedAttempts] =
+        await Promise.all([
+          // Total de logs
+          prisma.accessLog.count({ where: filters }),
 
-        // Usuários únicos
-        prisma.accessLog.findMany({
-          where: filters,
-          select: { userId: true },
-          distinct: ['userId']
-        }),
+          // Usuários únicos
+          prisma.accessLog.findMany({
+            where: filters,
+            select: { userId: true },
+            distinct: ['userId'],
+          }),
 
-        // Top ações
-        prisma.accessLog.groupBy({
-          by: ['action'],
-          where: filters,
-          _count: { _all: true },
-          orderBy: { _count: { id: 'desc' } },
-          take: 10
-        }),
+          // Top ações
+          prisma.accessLog.groupBy({
+            by: ['action'],
+            where: filters,
+            _count: { _all: true },
+            orderBy: { _count: { id: 'desc' } },
+            take: 10,
+          }),
 
-        // Top recursos
-        prisma.accessLog.groupBy({
-          by: ['resource'],
-          where: filters,
-          _count: { _all: true },
-          orderBy: { _count: { id: 'desc' } },
-          take: 10
-        }),
+          // Top recursos
+          prisma.accessLog.groupBy({
+            by: ['resource'],
+            where: filters,
+            _count: { _all: true },
+            orderBy: { _count: { id: 'desc' } },
+            take: 10,
+          }),
 
-        // Tentativas falhadas
-        prisma.accessLog.count({
-          where: {
-            ...filters,
-            success: false
-          }
-        })
-      ]);
+          // Tentativas falhadas
+          prisma.accessLog.count({
+            where: {
+              ...filters,
+              success: false,
+            },
+          }),
+        ]);
 
       res.json({
         success: true,
         data: {
           period: {
             startDate,
-            endDate
+            endDate,
           },
           statistics: {
             totalLogs,
             uniqueUsers: uniqueUsers.length,
             failedAttempts,
-            successRate: totalLogs > 0 ? ((totalLogs - failedAttempts) / totalLogs * 100).toFixed(2) : '0'
+            successRate:
+              totalLogs > 0
+                ? (((totalLogs - failedAttempts) / totalLogs) * 100).toFixed(2)
+                : '0',
           },
-          topActions: topActions.map(item => ({
+          topActions: topActions.map((item) => ({
             action: item.action,
-            count: (item._count as { _all: number })._all
+            count: (item._count as { _all: number })._all,
           })),
-          topResources: topResources.map(item => ({
+          topResources: topResources.map((item) => ({
             resource: item.resource,
-            count: (item._count as { _all: number })._all
-          }))
-        }
+            count: (item._count as { _all: number })._all,
+          })),
+        },
       });
     } catch (error) {
       next(error);
     }
-  }
+  },
 };
 
 export default AuditController;

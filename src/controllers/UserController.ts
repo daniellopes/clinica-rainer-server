@@ -10,7 +10,6 @@ const prisma = new PrismaClient();
  * Todas as operações respeitam a segregação por unidade
  */
 export class UserController {
-  
   /**
    * Lista todos os usuários da unidade do usuário logado
    */
@@ -18,7 +17,7 @@ export class UserController {
     try {
       const users = await prisma.user.findMany({
         where: {
-          unidade: req.userUnidade as any
+          unidade: req.userUnidade as any,
         },
         select: {
           id: true,
@@ -31,17 +30,17 @@ export class UserController {
           ativo: true,
           ultimoAcesso: true,
           createdAt: true,
-          updatedAt: true
+          updatedAt: true,
         },
         orderBy: {
-          nome: 'asc'
-        }
+          nome: 'asc',
+        },
       });
 
       return res.json({
         users,
         total: users.length,
-        unidade: req.userUnidade
+        unidade: req.userUnidade,
       });
     } catch (error) {
       next(error);
@@ -56,7 +55,11 @@ export class UserController {
       const { id } = req.params;
 
       if (!id) {
-        throw new AppError('ID do usuário é obrigatório', 400, 'MISSING_USER_ID');
+        throw new AppError(
+          'ID do usuário é obrigatório',
+          400,
+          'MISSING_USER_ID',
+        );
       }
 
       const user = await prisma.user.findUnique({
@@ -72,8 +75,8 @@ export class UserController {
           ativo: true,
           ultimoAcesso: true,
           createdAt: true,
-          updatedAt: true
-        }
+          updatedAt: true,
+        },
       });
 
       if (!user) {
@@ -82,7 +85,11 @@ export class UserController {
 
       // Verificar se usuário pertence à mesma unidade
       if (user.unidade !== req.userUnidade) {
-        throw new AppError('Acesso não permitido para esta unidade', 403, 'UNIT_ACCESS_DENIED');
+        throw new AppError(
+          'Acesso não permitido para esta unidade',
+          403,
+          'UNIT_ACCESS_DENIED',
+        );
       }
 
       return res.json(user);
@@ -96,37 +103,60 @@ export class UserController {
    */
   async create(req: Request, res: Response, next: NextFunction) {
     try {
-      const { 
-        nome, email, senha, role, cargo, telefone, 
-        especialidade, unidadesAcesso, permissoesEspecificas 
+      const {
+        nome,
+        email,
+        senha,
+        role,
+        cargo,
+        telefone,
+        especialidade,
+        unidadesAcesso,
+        permissoesEspecificas,
       } = req.body;
 
       // Validações básicas
       if (!nome || !email || !senha) {
-        throw new AppError('Nome, email e senha são obrigatórios', 400, 'MISSING_REQUIRED_FIELDS');
+        throw new AppError(
+          'Nome, email e senha são obrigatórios',
+          400,
+          'MISSING_REQUIRED_FIELDS',
+        );
       }
 
       // Validar formato do email
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(email)) {
-        throw new AppError('Formato de email inválido', 400, 'INVALID_EMAIL_FORMAT');
+        throw new AppError(
+          'Formato de email inválido',
+          400,
+          'INVALID_EMAIL_FORMAT',
+        );
       }
 
       // Validar senha
       if (senha.length < 6) {
-        throw new AppError('Senha deve ter pelo menos 6 caracteres', 400, 'WEAK_PASSWORD');
+        throw new AppError(
+          'Senha deve ter pelo menos 6 caracteres',
+          400,
+          'WEAK_PASSWORD',
+        );
       }
 
       // Verificar se usuário já existe
       const userExists = await prisma.user.findFirst({
-        where: { 
+        where: {
           email: email.toLowerCase().trim(),
-          unidade: req.userUnidade as any
-        }
+          unidade: req.userUnidade as any,
+        },
       });
 
       if (userExists) {
-        throw new AppError('Usuário já existe nesta unidade', 409, 'USER_ALREADY_EXISTS');
+        throw new AppError(
+          'Usuário já existe nesta unidade',
+          409,
+          'USER_ALREADY_EXISTS',
+        );
       }
 
       // Hash da senha
@@ -140,7 +170,7 @@ export class UserController {
         unidade: req.userUnidade as any,
         role: role || 'RECEPCIONISTA',
         cargo: cargo?.trim(),
-        telefone: telefone?.trim()
+        telefone: telefone?.trim(),
       };
 
       // Adicionar campos opcionais se fornecidos
@@ -162,15 +192,15 @@ export class UserController {
           cargo: true,
           telefone: true,
           ativo: true,
-          createdAt: true
-        }
+          createdAt: true,
+        },
       });
 
       // User created successfully
 
       return res.status(201).json({
         message: 'Usuário criado com sucesso',
-        user
+        user,
       });
     } catch (error) {
       next(error);
@@ -183,18 +213,30 @@ export class UserController {
   async update(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
-      const { 
-        nome, email, senha, role, cargo, telefone, ativo,
-        especialidade, unidadesAcesso, permissoesEspecificas 
+      const {
+        nome,
+        email,
+        senha,
+        role,
+        cargo,
+        telefone,
+        ativo,
+        especialidade,
+        unidadesAcesso,
+        permissoesEspecificas,
       } = req.body;
 
       if (!id) {
-        throw new AppError('ID do usuário é obrigatório', 400, 'MISSING_USER_ID');
+        throw new AppError(
+          'ID do usuário é obrigatório',
+          400,
+          'MISSING_USER_ID',
+        );
       }
 
       // Buscar usuário atual
       const user = await prisma.user.findUnique({
-        where: { id }
+        where: { id },
       });
 
       if (!user) {
@@ -203,7 +245,11 @@ export class UserController {
 
       // Verificar acesso à unidade
       if (user.unidade !== req.userUnidade) {
-        throw new AppError('Acesso não permitido para esta unidade', 403, 'UNIT_ACCESS_DENIED');
+        throw new AppError(
+          'Acesso não permitido para esta unidade',
+          403,
+          'UNIT_ACCESS_DENIED',
+        );
       }
 
       // Preparar dados para atualização
@@ -214,13 +260,21 @@ export class UserController {
         // Validar formato do email
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(email)) {
-          throw new AppError('Formato de email inválido', 400, 'INVALID_EMAIL_FORMAT');
+          throw new AppError(
+            'Formato de email inválido',
+            400,
+            'INVALID_EMAIL_FORMAT',
+          );
         }
         updateData.email = email.toLowerCase().trim();
       }
       if (senha) {
         if (senha.length < 6) {
-          throw new AppError('Senha deve ter pelo menos 6 caracteres', 400, 'WEAK_PASSWORD');
+          throw new AppError(
+            'Senha deve ter pelo menos 6 caracteres',
+            400,
+            'WEAK_PASSWORD',
+          );
         }
         updateData.senha = await bcrypt.hash(senha, 12);
       }
@@ -228,10 +282,11 @@ export class UserController {
       if (cargo) updateData.cargo = cargo.trim();
       if (telefone) updateData.telefone = telefone.trim();
       if (typeof ativo === 'boolean') updateData.ativo = ativo;
-      
+
       // Adicionar novos campos
       if (especialidade !== undefined) updateData.especialidade = especialidade;
-      if (unidadesAcesso !== undefined) updateData.unidadesAcesso = unidadesAcesso;
+      if (unidadesAcesso !== undefined)
+        updateData.unidadesAcesso = unidadesAcesso;
 
       // Atualizar usuário
       const updatedUser = await prisma.user.update({
@@ -248,15 +303,15 @@ export class UserController {
           ativo: true,
           ultimoAcesso: true,
           createdAt: true,
-          updatedAt: true
-        }
+          updatedAt: true,
+        },
       });
 
       // User updated successfully
 
       return res.json({
         message: 'Usuário atualizado com sucesso',
-        user: updatedUser
+        user: updatedUser,
       });
     } catch (error) {
       next(error);
@@ -271,12 +326,16 @@ export class UserController {
       const { id } = req.params;
 
       if (!id) {
-        throw new AppError('ID do usuário é obrigatório', 400, 'MISSING_USER_ID');
+        throw new AppError(
+          'ID do usuário é obrigatório',
+          400,
+          'MISSING_USER_ID',
+        );
       }
 
       // Buscar usuário
       const user = await prisma.user.findUnique({
-        where: { id }
+        where: { id },
       });
 
       if (!user) {
@@ -285,24 +344,32 @@ export class UserController {
 
       // Verificar acesso à unidade
       if (user.unidade !== req.userUnidade) {
-        throw new AppError('Acesso não permitido para esta unidade', 403, 'UNIT_ACCESS_DENIED');
+        throw new AppError(
+          'Acesso não permitido para esta unidade',
+          403,
+          'UNIT_ACCESS_DENIED',
+        );
       }
 
       // Impedir que usuário delete a si mesmo
       if (user.id === req.userId) {
-        throw new AppError('Não é possível deletar seu próprio usuário', 400, 'CANNOT_DELETE_SELF');
+        throw new AppError(
+          'Não é possível deletar seu próprio usuário',
+          400,
+          'CANNOT_DELETE_SELF',
+        );
       }
 
       // Soft delete (desativar) ao invés de deletar fisicamente
       await prisma.user.update({
         where: { id },
-        data: { ativo: false }
+        data: { ativo: false },
       });
 
       // User deactivated successfully
 
       return res.json({
-        message: 'Usuário desativado com sucesso'
+        message: 'Usuário desativado com sucesso',
       });
     } catch (error) {
       next(error);
