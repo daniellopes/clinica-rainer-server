@@ -10,8 +10,6 @@ import {
 } from '../middlewares/validationMiddleware';
 import {
   createPatientSchema,
-  updatePatientSchema,
-  listPatientsSchema,
   getPatientByIdSchema,
 } from '../schemas/patient.schema';
 import {

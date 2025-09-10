@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { PrismaClient, StatusAgendamento } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import { AppError } from '../middlewares/errorHandler';
 import { ErrorHandler } from '../utils/errorHandler';
 import { z } from 'zod';
@@ -207,7 +207,7 @@ export class AppointmentController {
         error,
         res,
         'AppointmentController.list',
-        'Erro ao listar agendamentos'
+        'Erro ao listar agendamentos',
       );
     }
   }
@@ -285,7 +285,7 @@ export class AppointmentController {
         error,
         res,
         'AppointmentController.getById',
-        'Erro ao buscar agendamento'
+        'Erro ao buscar agendamento',
       );
     }
   }
@@ -431,7 +431,7 @@ export class AppointmentController {
         error,
         res,
         'AppointmentController.create',
-        'Erro ao criar agendamento'
+        'Erro ao criar agendamento',
       );
     }
   }
@@ -557,7 +557,7 @@ export class AppointmentController {
         error,
         res,
         'AppointmentController.update',
-        'Erro ao atualizar agendamento'
+        'Erro ao atualizar agendamento',
       );
     }
   }
@@ -614,7 +614,7 @@ export class AppointmentController {
         error,
         res,
         'AppointmentController.cancel',
-        'Erro ao cancelar agendamento'
+        'Erro ao cancelar agendamento',
       );
     }
   }
@@ -688,7 +688,7 @@ export class AppointmentController {
         error,
         res,
         'AppointmentController.getToday',
-        'Erro ao buscar agendamentos do dia'
+        'Erro ao buscar agendamentos do dia',
       );
     }
   }
@@ -741,7 +741,7 @@ export class AppointmentController {
         error,
         res,
         'AppointmentController.confirm',
-        'Erro ao confirmar agendamento'
+        'Erro ao confirmar agendamento',
       );
     }
   }
@@ -858,7 +858,7 @@ export class AppointmentController {
         error,
         res,
         'AppointmentController.startConsultation',
-        'Erro ao iniciar consulta'
+        'Erro ao iniciar consulta',
       );
     }
   }

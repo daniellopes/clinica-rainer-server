@@ -11,7 +11,6 @@ import {
   createProcedureSchema,
   updateProcedureSchema,
   getProcedureByIdSchema,
-  getProceduresByCategorySchema,
 } from '../schemas/procedure.schema';
 
 const router = Router();

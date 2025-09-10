@@ -82,7 +82,7 @@ const AuthController = {
       );
 
       // Remover senha dos dados do usuário
-      const { senha: _, ...userData } = user;
+      const { ...userData } = user;
 
       // Log seguro de login bem-sucedido
       // Login successful
@@ -97,7 +97,9 @@ const AuthController = {
       // Log seguro de tentativa de login falhou
       const { email, unidade } = req.body;
       // Login attempt failed
-
+      console.error(
+        `Login falhou para o usuário: ${email}, unidade: ${unidade}`,
+      );
       next(error);
     }
   },

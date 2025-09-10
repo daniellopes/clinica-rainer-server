@@ -182,7 +182,7 @@ export class ConsultationController {
         error,
         res,
         'ConsultationController.list',
-        'Erro ao listar consultas'
+        'Erro ao listar consultas',
       );
     }
   }
@@ -274,7 +274,7 @@ export class ConsultationController {
         error,
         res,
         'ConsultationController.getById',
-        'Erro ao buscar consulta'
+        'Erro ao buscar consulta',
       );
     }
   }
@@ -343,7 +343,7 @@ export class ConsultationController {
         error,
         res,
         'ConsultationController.update',
-        'Erro ao atualizar consulta'
+        'Erro ao atualizar consulta',
       );
     }
   }
@@ -412,7 +412,7 @@ export class ConsultationController {
         error,
         res,
         'ConsultationController.finish',
-        'Erro ao finalizar consulta'
+        'Erro ao finalizar consulta',
       );
     }
   }
@@ -493,7 +493,7 @@ export class ConsultationController {
         error,
         res,
         'ConsultationController.cancel',
-        'Erro ao cancelar consulta'
+        'Erro ao cancelar consulta',
       );
     }
   }
@@ -546,7 +546,7 @@ export class ConsultationController {
         error,
         res,
         'ConsultationController.getInProgress',
-        'Erro ao buscar consultas em andamento'
+        'Erro ao buscar consultas em andamento',
       );
     }
   }

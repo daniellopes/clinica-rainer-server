@@ -10,13 +10,12 @@ interface TokenPayload {
   exp: number;
 }
 
-declare global {
-  namespace Express {
-    interface Request {
-      userId: string;
-      userRole: UserRole;
-      userUnidade: string;
-    }
+// 🔑 Forma correta de estender o tipo do Express.Request
+declare module 'express-serve-static-core' {
+  interface Request {
+    userId: string;
+    userRole: UserRole;
+    userUnidade: string;
   }
 }
 
@@ -31,7 +30,6 @@ export const authMiddleware = (
 ) => {
   const { authorization } = req.headers;
 
-  // Verificar se o token foi fornecido
   if (!authorization) {
     return res.status(401).json({
       error: 'Token de acesso não fornecido',
@@ -39,7 +37,6 @@ export const authMiddleware = (
     });
   }
 
-  // Extrair token do header
   const token = authorization.replace('Bearer', '').trim();
 
   if (!token) {
@@ -49,7 +46,6 @@ export const authMiddleware = (
     });
   }
 
-  // Verificar se JWT_SECRET existe
   const jwtSecret = process.env.JWT_SECRET;
   if (!jwtSecret) {
     console.error('❌ JWT_SECRET não configurado');
@@ -60,10 +56,8 @@ export const authMiddleware = (
   }
 
   try {
-    // Verificar e decodificar token
     const data = jwt.verify(token, jwtSecret) as TokenPayload;
 
-    // Validar payload do token
     if (!data.id || !data.role || !data.unidade) {
       return res.status(401).json({
         error: 'Token com dados incompletos',
@@ -71,16 +65,12 @@ export const authMiddleware = (
       });
     }
 
-    // Adicionar dados do usuário ao request
     req.userId = data.id;
     req.userRole = data.role;
     req.userUnidade = data.unidade;
 
     return next();
   } catch (error) {
-    // Log do erro para debugging (sem expor detalhes)
-    // Token verification failed - invalid or expired
-
     return res.status(401).json({
       error: 'Token inválido ou expirado',
       code: 'INVALID_TOKEN',

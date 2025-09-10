@@ -57,10 +57,6 @@ async function setupDefaultPermissions() {
 
     // Mostrar resumo
     for (const role of roles) {
-      const permissions = await PermissionService.getUserPermissions(
-        '00000000-0000-0000-0000-000000000000', // ID fake para teste
-        Unidade.BARRA,
-      );
       console.log(`   ${role}: Configurado para todas as unidades`);
     }
   } catch (error) {

@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { PrismaClient, UserRole } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import { AppError } from '../middlewares/errorHandler';
 
@@ -112,7 +112,6 @@ export class UserController {
         telefone,
         especialidade,
         unidadesAcesso,
-        permissoesEspecificas,
       } = req.body;
 
       // Validações básicas
@@ -223,7 +222,6 @@ export class UserController {
         ativo,
         especialidade,
         unidadesAcesso,
-        permissoesEspecificas,
       } = req.body;
 
       if (!id) {

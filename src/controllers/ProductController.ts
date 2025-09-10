@@ -6,8 +6,6 @@ import {
   listProductsSchema,
   adjustStockSchema,
 } from '../schemas/product.schema';
-import { z } from 'zod';
-import { AppError } from '../middlewares/errorHandler';
 import { ErrorHandler } from '../utils/errorHandler';
 
 const prisma = new PrismaClient();
@@ -66,7 +64,7 @@ export class ProductController {
         error,
         res,
         'ProductController.create',
-        'Erro ao criar produto'
+        'Erro ao criar produto',
       );
     }
   }
@@ -162,7 +160,7 @@ export class ProductController {
         error,
         res,
         'ProductController.list',
-        'Erro ao listar produtos'
+        'Erro ao listar produtos',
       );
     }
   }
@@ -207,7 +205,7 @@ export class ProductController {
         error,
         res,
         'ProductController.getById',
-        'Erro ao buscar produto'
+        'Erro ao buscar produto',
       );
     }
   }
@@ -237,7 +235,7 @@ export class ProductController {
         error,
         res,
         'ProductController.getByBarcode',
-        'Erro ao buscar produto por código de barras'
+        'Erro ao buscar produto por código de barras',
       );
     }
   }
@@ -314,7 +312,7 @@ export class ProductController {
         error,
         res,
         'ProductController.update',
-        'Erro ao atualizar produto'
+        'Erro ao atualizar produto',
       );
     }
   }
@@ -354,7 +352,7 @@ export class ProductController {
         error,
         res,
         'ProductController.toggleStatus',
-        'Erro ao alterar status do produto'
+        'Erro ao alterar status do produto',
       );
     }
   }
@@ -424,7 +422,7 @@ export class ProductController {
         error,
         res,
         'ProductController.adjustStock',
-        'Erro ao ajustar estoque'
+        'Erro ao ajustar estoque',
       );
     }
   }
@@ -463,7 +461,7 @@ export class ProductController {
         error,
         res,
         'ProductController.getLowStock',
-        'Erro ao buscar produtos com estoque baixo'
+        'Erro ao buscar produtos com estoque baixo',
       );
     }
   }
@@ -498,7 +496,7 @@ export class ProductController {
         error,
         res,
         'ProductController.getCategories',
-        'Erro ao buscar categorias'
+        'Erro ao buscar categorias',
       );
     }
   }

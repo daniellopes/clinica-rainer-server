@@ -1,11 +1,8 @@
 import { Request, Response } from 'express';
-import { PrismaClient, StatusAgendamento } from '@prisma/client';
 import { AppError } from '../middlewares/errorHandler';
 import { z } from 'zod';
 import BaseController, { BaseControllerConfig } from './BaseController';
 import { ErrorHandler } from '../utils/errorHandler';
-
-const prisma = new PrismaClient();
 
 // Schemas de validação
 const createAppointmentSchema = z.object({
@@ -223,7 +220,7 @@ export class AppointmentController extends BaseController<any> {
         error,
         res,
         'AppointmentControllerRefactored.list',
-        'Erro ao listar agendamentos'
+        'Erro ao listar agendamentos',
       );
     }
   }
@@ -301,7 +298,7 @@ export class AppointmentController extends BaseController<any> {
         error,
         res,
         'AppointmentControllerRefactored.getById',
-        'Erro ao buscar agendamento'
+        'Erro ao buscar agendamento',
       );
     }
   }
@@ -407,7 +404,7 @@ export class AppointmentController extends BaseController<any> {
         error,
         res,
         'AppointmentControllerRefactored.create',
-        'Erro ao criar agendamento'
+        'Erro ao criar agendamento',
       );
     }
   }
@@ -464,7 +461,7 @@ export class AppointmentController extends BaseController<any> {
         error,
         res,
         'AppointmentControllerRefactored.cancel',
-        'Erro ao cancelar agendamento'
+        'Erro ao cancelar agendamento',
       );
     }
   }
@@ -516,7 +513,7 @@ export class AppointmentController extends BaseController<any> {
         error,
         res,
         'AppointmentControllerRefactored.confirm',
-        'Erro ao confirmar agendamento'
+        'Erro ao confirmar agendamento',
       );
     }
   }
@@ -566,7 +563,7 @@ export class AppointmentController extends BaseController<any> {
         error,
         res,
         'AppointmentControllerRefactored.startConsultation',
-        'Erro ao iniciar consulta'
+        'Erro ao iniciar consulta',
       );
     }
   }
@@ -630,7 +627,7 @@ export class AppointmentController extends BaseController<any> {
         error,
         res,
         'AppointmentControllerRefactored.getToday',
-        'Erro ao buscar agendamentos de hoje'
+        'Erro ao buscar agendamentos de hoje',
       );
     }
   }

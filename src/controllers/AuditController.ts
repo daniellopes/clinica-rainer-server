@@ -27,7 +27,6 @@ const AuditController = {
         limit = 50,
       } = req.query;
       const userUnidade = req.headers['x-unidade'] as string;
-      const unidadeEnum = userUnidade as Unidade;
 
       if (!userUnidade) {
         throw new AppError('Unidade não especificada', 400, 'MISSING_UNIDADE');

@@ -8,11 +8,11 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "lint": "eslint . --ext .ts",
+    "lint-fix": "eslint . --ext .ts --fix",
     "format": "prettier --write \"src/**/*.ts\"",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
-    "create-admin": "ts-node src/scripts/createAdmin.ts",
-    "setup-permissions": "tsx src/scripts/setupDefaultPermissions.ts"
+    "create-admin": "ts-node src/scripts/createAdmin.ts"
   },
   "keywords": [],
   "author": "",

@@ -4,12 +4,8 @@ import { AppError } from '../middlewares/errorHandler';
 import { ErrorHandler } from '../utils/errorHandler';
 import {
   createPatientSchema,
-  updatePatientSchema,
   listPatientsSchema,
   getPatientByIdSchema,
-  CreatePatientData,
-  UpdatePatientData,
-  ListPatientsQuery,
 } from '../schemas/patient.schema';
 
 const prisma = new PrismaClient();
@@ -100,7 +96,7 @@ export class PatientController {
         error,
         res,
         'PatientController.list',
-        'Erro ao listar pacientes'
+        'Erro ao listar pacientes',
       );
     }
   }
@@ -153,7 +149,7 @@ export class PatientController {
         error,
         res,
         'PatientController.getById',
-        'Erro ao buscar paciente'
+        'Erro ao buscar paciente',
       );
     }
   }
@@ -420,7 +416,7 @@ export class PatientController {
         error,
         res,
         'PatientController.update',
-        'Erro ao atualizar paciente'
+        'Erro ao atualizar paciente',
       );
     }
   }
@@ -491,7 +487,7 @@ export class PatientController {
         error,
         res,
         'PatientController.delete',
-        'Erro ao excluir paciente'
+        'Erro ao excluir paciente',
       );
     }
   }
@@ -522,7 +518,7 @@ export class PatientController {
         error,
         res,
         'PatientController.getBirthdays',
-        'Erro ao buscar aniversariantes'
+        'Erro ao buscar aniversariantes',
       );
     }
   }

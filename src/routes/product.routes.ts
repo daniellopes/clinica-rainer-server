@@ -10,7 +10,6 @@ import {
   createProductSchema,
   updateProductSchema,
   getProductByIdSchema,
-  getProductByBarcodeSchema,
   adjustStockSchema,
 } from '../schemas/product.schema';
 

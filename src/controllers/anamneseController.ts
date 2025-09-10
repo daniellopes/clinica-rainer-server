@@ -1,7 +1,6 @@
 import { Request, Response } from 'express';
 import { PrismaClient, Prisma } from '@prisma/client';
 import { z } from 'zod';
-import { AppError } from '../middlewares/errorHandler';
 import { ErrorHandler } from '../utils/errorHandler';
 
 const prisma = new PrismaClient();
@@ -69,7 +68,7 @@ export const getAnamnesesByPaciente = async (req: Request, res: Response) => {
     });
 
     // Formatar anamneses
-    const formattedAnamneses = anamneses.map((anamnese) => ({
+    const formattedAnamneses = anamneses.map((anamnese: any) => ({
       id: anamnese.id,
       pacienteId: anamnese.consultation.patientId,
       templateId: anamnese.formId,
@@ -91,7 +90,7 @@ export const getAnamnesesByPaciente = async (req: Request, res: Response) => {
       error,
       res,
       'getAnamnesesByPaciente',
-      'Erro ao buscar anamneses do paciente'
+      'Erro ao buscar anamneses do paciente',
     );
   }
 };
@@ -142,7 +141,7 @@ export const createAnamnese = async (req: Request, res: Response) => {
       error,
       res,
       'createAnamnese',
-      'Erro ao criar anamnese'
+      'Erro ao criar anamnese',
     );
   }
 };
@@ -197,7 +196,7 @@ export const updateAnamnese = async (req: Request, res: Response) => {
       error,
       res,
       'updateAnamnese',
-      'Erro ao atualizar anamnese'
+      'Erro ao atualizar anamnese',
     );
   }
 };
@@ -217,7 +216,7 @@ export const deleteAnamnese = async (req: Request, res: Response) => {
       error,
       res,
       'deleteAnamnese',
-      'Erro ao deletar anamnese'
+      'Erro ao deletar anamnese',
     );
   }
 };
@@ -242,7 +241,7 @@ export const getAnamneseForms = async (req: Request, res: Response) => {
       error,
       res,
       'getAnamneseForms',
-      'Erro ao buscar formulários de anamnese'
+      'Erro ao buscar formulários de anamnese',
     );
   }
 };
@@ -279,7 +278,7 @@ export const saveAnamneseTemplate = async (req: Request, res: Response) => {
       error,
       res,
       'saveAnamneseTemplate',
-      'Erro ao criar template'
+      'Erro ao criar template',
     );
   }
 };
@@ -322,7 +321,7 @@ export const updateAnamneseTemplate = async (req: Request, res: Response) => {
       error,
       res,
       'updateAnamneseTemplate',
-      'Erro ao atualizar template'
+      'Erro ao atualizar template',
     );
   }
 };
@@ -367,7 +366,7 @@ export const duplicateAnamneseTemplate = async (
       error,
       res,
       'duplicateAnamneseTemplate',
-      'Erro ao duplicar template'
+      'Erro ao duplicar template',
     );
   }
 };

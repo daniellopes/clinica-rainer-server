@@ -6,7 +6,6 @@ import {
   listProceduresSchema,
 } from '../schemas/procedure.schema';
 import { z } from 'zod';
-import { AppError } from '../middlewares/errorHandler';
 import { ErrorHandler } from '../utils/errorHandler';
 
 const prisma = new PrismaClient();
@@ -60,7 +59,7 @@ export class ProcedureController {
         error,
         res,
         'ProcedureController.create',
-        'Erro ao criar procedimento'
+        'Erro ao criar procedimento',
       );
     }
   }
@@ -151,7 +150,7 @@ export class ProcedureController {
         error,
         res,
         'ProcedureController.list',
-        'Erro ao listar procedimentos'
+        'Erro ao listar procedimentos',
       );
     }
   }
@@ -181,7 +180,7 @@ export class ProcedureController {
         error,
         res,
         'ProcedureController.getById',
-        'Erro ao buscar procedimento'
+        'Erro ao buscar procedimento',
       );
     }
   }
@@ -219,7 +218,7 @@ export class ProcedureController {
         error,
         res,
         'ProcedureController.getByCategory',
-        'Erro ao buscar procedimentos por categoria'
+        'Erro ao buscar procedimentos por categoria',
       );
     }
   }
@@ -254,7 +253,7 @@ export class ProcedureController {
         error,
         res,
         'ProcedureController.getCategories',
-        'Erro ao buscar categorias'
+        'Erro ao buscar categorias',
       );
     }
   }
@@ -332,7 +331,7 @@ export class ProcedureController {
         error,
         res,
         'ProcedureController.update',
-        'Erro ao atualizar procedimento'
+        'Erro ao atualizar procedimento',
       );
     }
   }
@@ -385,7 +384,7 @@ export class ProcedureController {
         error,
         res,
         'ProcedureController.delete',
-        'Erro ao desativar procedimento'
+        'Erro ao desativar procedimento',
       );
     }
   }
@@ -425,7 +424,7 @@ export class ProcedureController {
         error,
         res,
         'ProcedureController.toggleStatus',
-        'Erro ao alterar status do procedimento'
+        'Erro ao alterar status do procedimento',
       );
     }
   }
@@ -483,7 +482,7 @@ export class ProcedureController {
         error,
         res,
         'ProcedureController.getMostPopular',
-        'Erro ao buscar procedimentos populares'
+        'Erro ao buscar procedimentos populares',
       );
     }
   }

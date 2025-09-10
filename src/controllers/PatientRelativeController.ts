@@ -5,9 +5,6 @@ import {
   createPatientRelativeSchema,
   updatePatientRelativeSchema,
   listPatientRelativesSchema,
-  CreatePatientRelativeData,
-  UpdatePatientRelativeData,
-  ListPatientRelativesQuery,
 } from '../schemas/patient-relative.schema';
 
 const prisma = new PrismaClient();
