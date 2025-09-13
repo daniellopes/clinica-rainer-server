@@ -95,7 +95,7 @@ export const listProductsSchema = z.object({
 
 // Schema para busca por ID
 export const getProductByIdSchema = z.object({
-  id: z.string().cuid('ID inválido'),
+  id: z.string().uuid('ID inválido'),
 });
 
 // Schema para busca por código de barras

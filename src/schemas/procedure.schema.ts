@@ -23,14 +23,16 @@ export const createProcedureSchema = z.object({
     .min(5, 'Duração mínima de 5 minutos')
     .max(480, 'Duração máxima de 8 horas'),
 
-  categoria: z.string().min(2, 'Categoria é obrigatória'),
+  categoria: z.string().min(2, 'Categoria deve ter pelo menos 2 caracteres'),
 
-  ativo: z.boolean().optional().default(true),
+  especialidades: z.array(z.string().min(1, 'Especialidade não pode ser vazia')).optional(),
+
+  ativo: z.boolean().optional(),
 });
 
 // Schema para atualização (todos os campos opcionais)
 export const updateProcedureSchema = createProcedureSchema.partial().extend({
-  id: z.string().cuid('ID inválido').optional(),
+  id: z.string().uuid('ID inválido').optional(),
 });
 
 // Schema para listagem com filtros
@@ -60,7 +62,7 @@ export const listProceduresSchema = z.object({
 
 // Schema para busca por ID
 export const getProcedureByIdSchema = z.object({
-  id: z.string().cuid('ID inválido'),
+  id: z.string().uuid('ID inválido'),
 });
 
 // Schema para busca por categoria

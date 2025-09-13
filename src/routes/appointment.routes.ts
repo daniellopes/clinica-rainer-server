@@ -48,6 +48,12 @@ router.patch(
   checkUnidadeMiddleware,
   appointmentController.cancel.bind(appointmentController),
 );
+router.delete(
+  '/:id',
+  authMiddleware,
+  checkUnidadeMiddleware,
+  appointmentController.delete.bind(appointmentController),
+);
 router.post(
   '/:id/start-consultation',
   authMiddleware,

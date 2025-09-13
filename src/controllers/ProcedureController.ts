@@ -38,6 +38,7 @@ export class ProcedureController {
           categoria: validatedData.categoria,
           duracao: validatedData.duracao,
           valor: validatedData.preco,
+          especialidades: validatedData.especialidades ?? [],
           ativo: validatedData.ativo ?? true,
           unidade: userUnidade as any,
         },
@@ -307,6 +308,9 @@ export class ProcedureController {
         updateData.categoria = validatedData.categoria;
       if (validatedData.duracao) updateData.duracao = validatedData.duracao;
       if (validatedData.preco) updateData.valor = validatedData.preco;
+      if (validatedData.especialidades !== undefined) {
+        updateData.especialidades = validatedData.especialidades;
+      }
       if (validatedData.ativo !== undefined)
         updateData.ativo = validatedData.ativo;
 
@@ -336,7 +340,7 @@ export class ProcedureController {
     }
   }
 
-  // Excluir procedimento (lógica de negócio sem soft delete por limitação do schema)
+  // Excluir procedimento permanentemente
   async delete(req: Request, res: Response) {
     try {
       const { id } = req.params;
@@ -370,14 +374,13 @@ export class ProcedureController {
         });
       }
 
-      // Como não há soft delete no schema, vamos apenas desativar
-      await prisma.procedure.update({
+      // Excluir permanentemente o procedimento
+      await prisma.procedure.delete({
         where: { id },
-        data: { ativo: false },
       });
 
       res.json({
-        message: 'Procedimento desativado com sucesso',
+        message: 'Procedimento excluído com sucesso',
       });
     } catch (error) {
       return ErrorHandler.handleError(

@@ -16,7 +16,13 @@ import {
 const router = Router();
 const procedureController = new ProcedureController();
 
-// Todas as rotas requerem autenticação
+// Rota pública para listar procedimentos (temporária para desenvolvimento)
+router.get(
+  '/public',
+  procedureController.list,
+);
+
+// Todas as outras rotas requerem autenticação
 router.use(authMiddleware);
 router.use(checkUnidadeMiddleware);
 

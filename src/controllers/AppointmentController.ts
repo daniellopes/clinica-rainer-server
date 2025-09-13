@@ -65,8 +65,24 @@ const listAppointmentsSchema = z.object({
     .optional(),
   medicoId: z.string().uuid().optional(),
   patientId: z.string().uuid().optional(),
-  dataInicio: z.string().datetime().optional(),
-  dataFim: z.string().datetime().optional(),
+  dataInicio: z
+    .string()
+    .refine((val) => {
+      // Aceita formato YYYY-MM-DD ou datetime completo
+      const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+      const datetimeRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z?$/;
+      return dateRegex.test(val) || datetimeRegex.test(val);
+    }, 'Data deve estar no formato YYYY-MM-DD ou datetime ISO')
+    .optional(),
+  dataFim: z
+    .string()
+    .refine((val) => {
+      // Aceita formato YYYY-MM-DD ou datetime completo
+      const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+      const datetimeRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z?$/;
+      return dateRegex.test(val) || datetimeRegex.test(val);
+    }, 'Data deve estar no formato YYYY-MM-DD ou datetime ISO')
+    .optional(),
   orderBy: z.enum(['dataHora', 'createdAt', 'updatedAt']).default('dataHora'),
   orderDirection: z.enum(['asc', 'desc']).default('asc'),
 });
@@ -131,10 +147,18 @@ export class AppointmentController {
       if (dataInicio || dataFim) {
         where.dataHora = {};
         if (dataInicio) {
-          where.dataHora.gte = new Date(dataInicio);
+          // Se for apenas data (YYYY-MM-DD), adiciona início do dia
+          const dataInicioDate = dataInicio.includes('T') 
+            ? new Date(dataInicio) 
+            : new Date(dataInicio + 'T00:00:00');
+          where.dataHora.gte = dataInicioDate;
         }
         if (dataFim) {
-          where.dataHora.lte = new Date(dataFim);
+          // Se for apenas data (YYYY-MM-DD), adiciona fim do dia
+          const dataFimDate = dataFim.includes('T') 
+            ? new Date(dataFim) 
+            : new Date(dataFim + 'T23:59:59');
+          where.dataHora.lte = dataFimDate;
         }
       }
 
@@ -746,17 +770,97 @@ export class AppointmentController {
     }
   }
 
+  // Excluir agendamento
+  async delete(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const { userUnidade } = req;
+
+      if (!id) {
+        throw new AppError('ID do agendamento é obrigatório', 400);
+      }
+
+      // Verificar se agendamento existe
+      const existingAppointment = await prisma.appointment.findFirst({
+        where: {
+          id,
+          unidade: userUnidade as any,
+        },
+      });
+
+      if (!existingAppointment) {
+        throw new AppError('Agendamento não encontrado', 404);
+      }
+
+      // Verificar se pode ser excluído
+      if (existingAppointment.status === 'EM_ATENDIMENTO') {
+        throw new AppError(
+          'Não é possível excluir agendamento em atendimento',
+          400,
+        );
+      }
+
+      if (existingAppointment.status === 'CONCLUIDO') {
+        throw new AppError(
+          'Não é possível excluir agendamento já concluído',
+          400,
+        );
+      }
+
+      // Verificar se existe consulta associada
+      const consultation = await prisma.consultation.findFirst({
+        where: {
+          appointmentId: id,
+        },
+      });
+
+      if (consultation) {
+        throw new AppError(
+          'Não é possível excluir agendamento que possui consulta associada',
+          400,
+        );
+      }
+
+      // Excluir agendamento
+      await prisma.appointment.delete({
+        where: { id },
+      });
+
+      return res.json({
+        success: true,
+        message: 'Agendamento excluído com sucesso',
+      });
+    } catch (error: unknown) {
+      return ErrorHandler.handleError(
+        error,
+        res,
+        'AppointmentController.delete',
+        'Erro ao excluir agendamento',
+      );
+    }
+  }
+
   // Iniciar consulta (transição de agendamento para consulta)
   async startConsultation(req: Request, res: Response) {
     try {
+      console.log('🔍 [START_CONSULTATION DEBUG] Iniciando processo de start consultation');
+      console.log('🔍 [START_CONSULTATION DEBUG] Parâmetros recebidos:', {
+        id: req.params.id,
+        userId: req.userId,
+        userUnidade: req.userUnidade,
+        userRole: req.userRole,
+      });
+
       const { id } = req.params;
       const { userId, userUnidade } = req;
 
       if (!userId) {
+        console.log('❌ [START_CONSULTATION DEBUG] Usuário não autenticado');
         throw new AppError('Usuário não autenticado', 401);
       }
 
       if (!id) {
+        console.log('❌ [START_CONSULTATION DEBUG] ID do agendamento não fornecido');
         throw new AppError('ID do agendamento é obrigatório', 400);
       }
 
