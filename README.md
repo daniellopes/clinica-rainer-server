@@ -200,3 +200,4 @@ Veja `prisma/README.md` e `prisma/schema.prisma` para documentação completa.
 4. Push para a branch (`git push origin feature/nova-funcionalidade`)
 5. Abra um Pull Request
 
+## Rebase
