@@ -75,6 +75,11 @@ const AuthController = {
       next(error);
     }
   },
+
+  async register(req: Request, res: Response, next: NextFunction) {
+    // register implementation
+    res.status(201).json({ message: 'User registered successfully' });
+  }
 };
 
 export default AuthController;
