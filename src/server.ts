@@ -14,6 +14,33 @@ dotenv.config();
 
 const app = express();
 
+// Configuração CORS aprimorada
+const corsOptions = {
+  origin: function (
+    origin: string | undefined,
+    callback: (err: Error | null, allow?: boolean) => void,
+  ) {
+    // Lista de origens permitidas
+    const allowedOrigins = [
+      'http://localhost:3000', // Desenvolvimento
+      'https://clinica-rainer-frontend.vercel.app', // Produção
+      'https://staging-clinica-rainer-frontend.vercel.app', // Staging (se houver)
+    ];
+
+    // Permitir requisições sem origin (ex: Postman, mobile apps)
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Não permitido pelo CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-unidade'],
+};
+
 // Rate limiting geral (aplicado antes de outros middlewares)
 app.use(apiRateLimit);
 
@@ -32,14 +59,7 @@ app.use(
 );
 
 // CORS configurado adequadamente
-app.use(
-  cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'x-unidade'],
-  }),
-);
+app.use(cors(corsOptions));
 
 // Middlewares de processamento
 app.use(compression());
@@ -71,8 +91,12 @@ app.use(errorHandler);
 const PORT = process.env.PORT || 3001; // Porta correta
 
 app.listen(PORT, () => {
+  // eslint-disable-next-line no-console
   console.log(`🚀 Server running on port ${PORT}`);
+  // eslint-disable-next-line no-console
   console.log(`📡 Health check: http://localhost:${PORT}/health`);
+  // eslint-disable-next-line no-console
   console.log(`🔒 Rate limiting enabled`);
+  // eslint-disable-next-line no-console
   console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
 });

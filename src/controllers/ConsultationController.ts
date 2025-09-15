@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Unidade } from '@prisma/client';
 import { z } from 'zod';
 import { AppError } from '../middlewares/errorHandler';
 import { ErrorHandler } from '../utils/errorHandler';
@@ -64,7 +64,7 @@ export class ConsultationController {
 
       // Construir filtros dinâmicos
       const where: any = {
-        unidade: userUnidade as any,
+        unidade: userUnidade as Unidade,
       };
 
       if (search) {
@@ -200,7 +200,7 @@ export class ConsultationController {
       const consultation = await prisma.consultation.findFirst({
         where: {
           id,
-          unidade: userUnidade as any as any as any as any as any as any as any,
+          unidade: userUnidade as Unidade as any as any as any as any as any as any,
         },
         include: {
           patient: {
@@ -294,7 +294,7 @@ export class ConsultationController {
       const existingConsultation = await prisma.consultation.findFirst({
         where: {
           id,
-          unidade: userUnidade as any,
+          unidade: userUnidade as Unidade,
         },
       });
 
@@ -362,7 +362,7 @@ export class ConsultationController {
       const consultation = await prisma.consultation.findFirst({
         where: {
           id,
-          unidade: userUnidade as any,
+          unidade: userUnidade as Unidade,
         },
         include: {
           appointment: true,
@@ -432,7 +432,7 @@ export class ConsultationController {
       const consultation = await prisma.consultation.findFirst({
         where: {
           id,
-          unidade: userUnidade as any,
+          unidade: userUnidade as Unidade,
         },
         include: {
           appointment: true,
@@ -505,7 +505,7 @@ export class ConsultationController {
 
       const consultationsInProgress = await prisma.consultation.findMany({
         where: {
-          unidade: userUnidade as any,
+          unidade: userUnidade as Unidade,
           status: 'EM_ANDAMENTO',
         },
         include: {
