@@ -44,6 +44,7 @@ const AuthController = {
       if (!isValidPassword) {
         throw new AppError('Credenciais inválidas', 401, 'INVALID_CREDENTIALS');
       }
+      console.log("JWT_SECRET:", process.env.JWT_SECRET);
 
       const jwtSecret = process.env.JWT_SECRET;
       if (!jwtSecret) {
