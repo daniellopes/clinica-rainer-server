@@ -21,7 +21,6 @@ const AuthController = {
       }
 
       const unidadeNormalizada = (unidade as string).toUpperCase();
-
       if (!Object.values(Unidade).includes(unidadeNormalizada as Unidade)) {
         throw new AppError('Unidade inválida', 400, 'INVALID_UNIDADE');
       }
@@ -51,16 +50,14 @@ const AuthController = {
         throw new AppError('Configuração do servidor incorreta', 500, 'SERVER_CONFIG_ERROR');
       }
 
+      const expiresInSeconds = 24 * 60 * 60; // 1 dia
       const token = jwt.sign(
-        {
-          id: user.id,
-          role: user.role,
-          unidade: user.unidade,
-        },
+        { id: user.id, role: user.role, unidade: user.unidade },
         jwtSecret,
-        { expiresIn: '1d' },
+        { expiresIn: expiresInSeconds },
       );
 
+      // remove senha antes de retornar
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { senha: _, ...userData } = user;
 
@@ -68,7 +65,8 @@ const AuthController = {
         message: 'Login realizado com sucesso',
         user: userData,
         token,
-        expiresIn: '1d',
+        expiresIn: expiresInSeconds,
+        expiresAt: Date.now() + expiresInSeconds * 1000,
       });
     } catch (error) {
       console.error('Erro no login:', error);
