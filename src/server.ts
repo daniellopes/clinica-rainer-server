@@ -32,13 +32,24 @@ app.use(
 );
 
 // CORS configurado adequadamente
+const allowedOrigins = [
+  'http://localhost:3000',
+  'https://clinica-rainer-frontend.vercel.app',
+];
+
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || 'https://clinica-rainer-frontend.vercel.app',
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error(`Not allowed by CORS: ${origin}`));
+      }
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization', 'x-unidade'],
-  }),
+  })
 );
 
 // Middlewares de processamento
