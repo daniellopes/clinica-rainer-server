@@ -44,6 +44,7 @@ const AuthController = {
       if (!isValidPassword) {
         throw new AppError('Credenciais inválidas', 401, 'INVALID_CREDENTIALS');
       }
+      console.log("JWT_SECRET:", process.env.JWT_SECRET);
 
       const jwtSecret = process.env.JWT_SECRET;
       if (!jwtSecret) {
@@ -75,6 +76,11 @@ const AuthController = {
       next(error);
     }
   },
+
+  async register(req: Request, res: Response, next: NextFunction) {
+    // register implementation
+    res.status(201).json({ message: 'User registered successfully' });
+  }
 };
 
 export default AuthController;
