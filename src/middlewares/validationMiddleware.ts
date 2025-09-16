@@ -13,19 +13,20 @@ export const validateZod = (schema: z.ZodSchema) => {
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({
-          error: 'Dados inválidos',
-          code: 'VALIDATION_ERROR',
+          success: false,
+          message: 'Dados inválidos',
+          error: 'VALIDATION_ERROR',
           details: error.errors.map((err) => ({
             field: err.path.join('.'),
             message: err.message,
             value: err.code,
           })),
-          timestamp: new Date().toISOString(),
         });
       }
       return res.status(500).json({
-        error: 'Erro interno de validação',
-        timestamp: new Date().toISOString(),
+        success: false,
+        message: 'Erro interno de validação',
+        error: 'INTERNAL_VALIDATION_ERROR',
       });
     }
   };
@@ -43,19 +44,20 @@ export const validateParamsZod = (schema: z.ZodSchema) => {
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({
-          error: 'Parâmetros inválidos',
-          code: 'PARAMS_VALIDATION_ERROR',
+          success: false,
+          message: 'Parâmetros inválidos',
+          error: 'PARAMS_VALIDATION_ERROR',
           details: error.errors.map((err) => ({
             field: err.path.join('.'),
             message: err.message,
             value: err.code,
           })),
-          timestamp: new Date().toISOString(),
         });
       }
       return res.status(500).json({
-        error: 'Erro interno de validação',
-        timestamp: new Date().toISOString(),
+        success: false,
+        message: 'Erro interno de validação',
+        error: 'INTERNAL_VALIDATION_ERROR',
       });
     }
   };

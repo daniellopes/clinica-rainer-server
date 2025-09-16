@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
+import * as jwt from 'jsonwebtoken';
 import { UserRole } from '@prisma/client';
 
 interface TokenPayload {
@@ -40,8 +40,9 @@ export const authMiddleware = (
   if (!authorization) {
     console.log('❌ [AUTH DEBUG] Token de acesso não fornecido');
     return res.status(401).json({
-      error: 'Token de acesso não fornecido',
-      code: 'NO_TOKEN',
+      success: false,
+      message: 'Token de acesso não fornecido',
+      error: 'NO_TOKEN',
     });
   }
 
@@ -50,8 +51,9 @@ export const authMiddleware = (
   if (!token) {
     console.log('❌ [AUTH DEBUG] Formato de token inválido');
     return res.status(401).json({
-      error: 'Formato de token inválido',
-      code: 'INVALID_TOKEN_FORMAT',
+      success: false,
+      message: 'Formato de token inválido',
+      error: 'INVALID_TOKEN_FORMAT',
     });
   }
 
@@ -59,8 +61,9 @@ export const authMiddleware = (
   if (!jwtSecret) {
     console.error('❌ JWT_SECRET não configurado');
     return res.status(500).json({
-      error: 'Erro interno do servidor',
-      code: 'SERVER_CONFIG_ERROR',
+      success: false,
+      message: 'Erro interno do servidor',
+      error: 'SERVER_CONFIG_ERROR',
     });
   }
 
@@ -78,8 +81,9 @@ export const authMiddleware = (
     if (!data.id || !data.role || !data.unidade) {
       console.log('❌ [AUTH DEBUG] Token com dados incompletos');
       return res.status(401).json({
-        error: 'Token com dados incompletos',
-        code: 'INCOMPLETE_TOKEN',
+        success: false,
+        message: 'Token com dados incompletos',
+        error: 'INCOMPLETE_TOKEN',
       });
     }
 
@@ -92,8 +96,9 @@ export const authMiddleware = (
   } catch (error) {
     console.log('❌ [AUTH DEBUG] Erro ao verificar token:', error);
     return res.status(401).json({
-      error: 'Token inválido ou expirado',
-      code: 'INVALID_TOKEN',
+      success: false,
+      message: 'Token inválido ou expirado',
+      error: 'INVALID_TOKEN',
     });
   }
 };

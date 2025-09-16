@@ -14,19 +14,23 @@ export const checkUnidadeMiddleware = (
 
   const unidadeHeader = req.headers['x-unidade'] as string;
 
+  // Se não há header x-unidade, usar a unidade do token JWT
   if (!unidadeHeader) {
-    console.log('❌ [UNIDADE DEBUG] Unidade não especificada no header');
-    return res.status(400).json({
-      error: 'Unidade não especificada no header',
-      code: 'MISSING_UNIDADE_HEADER',
-    });
+    console.log('⚠️ [UNIDADE DEBUG] Header x-unidade não fornecido, usando unidade do token:', req.userUnidade);
+    // Não retornar erro, apenas usar a unidade do token
+    return next();
   }
 
   if (!['BARRA', 'TIJUCA'].includes(unidadeHeader)) {
     console.log('❌ [UNIDADE DEBUG] Unidade inválida:', unidadeHeader);
     return res.status(400).json({
-      error: 'Unidade inválida. Use BARRA ou TIJUCA',
-      code: 'INVALID_UNIDADE',
+      success: false,
+      message: 'Unidade inválida. Use BARRA ou TIJUCA',
+      error: 'INVALID_UNIDADE',
+      details: {
+        provided: unidadeHeader,
+        valid: ['BARRA', 'TIJUCA']
+      }
     });
   }
 
@@ -36,8 +40,13 @@ export const checkUnidadeMiddleware = (
       tokenUnidade: req.userUnidade,
     });
     return res.status(403).json({
-      error: 'Acesso não permitido para esta unidade',
-      code: 'UNIDADE_ACCESS_DENIED',
+      success: false,
+      message: 'Acesso não permitido para esta unidade',
+      error: 'UNIDADE_ACCESS_DENIED',
+      details: {
+        headerUnidade: unidadeHeader,
+        tokenUnidade: req.userUnidade
+      }
     });
   }
 

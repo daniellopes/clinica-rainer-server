@@ -14,6 +14,13 @@ export class PatientController {
   // Listar pacientes com filtros e paginação
   async list(req: Request, res: Response) {
     try {
+      console.log('🔍 [PATIENT DEBUG] Iniciando listagem de pacientes');
+      console.log('🔍 [PATIENT DEBUG] Query params recebidos:', req.query);
+      console.log('🔍 [PATIENT DEBUG] Headers recebidos:', {
+        'x-unidade': req.headers['x-unidade'],
+        'authorization': req.headers.authorization ? 'Presente' : 'Ausente'
+      });
+
       // Validar query parameters
       const validatedQuery = listPatientsSchema.parse(req.query);
       const { page, limit, search, unidade, status, orderBy, orderDirection } =
@@ -21,6 +28,12 @@ export class PatientController {
 
       // Construir filtros dinâmicos
       const where: any = {};
+
+      // Sempre filtrar pela unidade do usuário logado se não especificada
+      const unidadeToUse = unidade || req.userUnidade;
+      if (unidadeToUse) {
+        where.unidade = unidadeToUse;
+      }
 
       if (search) {
         where.OR = [
@@ -32,15 +45,13 @@ export class PatientController {
         ];
       }
 
-      if (unidade) {
-        where.unidade = unidade;
-      }
-
       // Se foi especificado um status, usar o status especificado
       if (status) {
         where.status = status;
       }
       // Se não foi especificado status, não filtra (lista todos)
+
+      console.log('🔍 [PATIENT DEBUG] Filtros aplicados:', where);
 
       // Buscar pacientes com paginação
       const [patients, totalCount] = await Promise.all([
@@ -79,6 +90,13 @@ export class PatientController {
 
       const totalPages = Math.ceil(totalCount / limit);
 
+      console.log('✅ [PATIENT DEBUG] Listagem concluída com sucesso:', {
+        totalCount,
+        returnedCount: patients.length,
+        page,
+        totalPages
+      });
+
       return res.json({
         success: true,
         data: patients,
@@ -92,6 +110,7 @@ export class PatientController {
         },
       });
     } catch (error: unknown) {
+      console.error('❌ [PATIENT DEBUG] Erro na listagem de pacientes:', error);
       return ErrorHandler.handleError(
         error,
         res,

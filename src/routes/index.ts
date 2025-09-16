@@ -10,6 +10,8 @@ import auditRoutes from './audit.routes';
 import anamneseRoutes from './anamnese.routes';
 import appointmentRoutes from './appointment.routes';
 import consultationRoutes from './consultation.routes';
+import recipeRoutes from './recipe.routes';
+import recipeTemplateRoutes from './recipe-template.routes';
 
 const router = Router();
 
@@ -24,5 +26,7 @@ router.use('/audit', auditRoutes);
 router.use('/anamnese', anamneseRoutes);
 router.use('/appointments', appointmentRoutes);
 router.use('/consultations', consultationRoutes);
+router.use('/recipes', recipeRoutes);
+router.use('/recipe-templates', recipeTemplateRoutes);
 
 export default router;
