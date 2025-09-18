@@ -2,7 +2,7 @@ import { Router } from 'express';
 import PatientController from '../controllers/PatientController';
 import PatientRelativeController from '../controllers/PatientRelativeController';
 import { getAnamnesesByPaciente } from '../controllers/anamneseController';
-import { authMiddleware } from '../middlewares/authMiddleware';
+import authMiddleware from '../middlewares/authMiddleware';
 import { checkUnidadeMiddleware } from '../middlewares/checkUnidadeMiddleware';
 import {
   validateZod,

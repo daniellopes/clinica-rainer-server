@@ -1,22 +1,20 @@
 import { Router } from 'express';
 import { UserController } from '../controllers/UserController';
-import { authMiddleware } from '../middlewares/authMiddleware';
+import authMiddleware from '../middlewares/authMiddleware';
 import { checkUnidadeMiddleware } from '../middlewares/checkUnidadeMiddleware';
-import { validateZod } from '../middlewares/validationMiddleware';
-import { createUserSchema, updateUserSchema } from '../schemas/user.schema';
 
 const router = Router();
 const userController = new UserController();
 
-// Aplica o middleware de autenticação e verificação de unidade em todas as rotas
+// Aplica os middlewares globais
 router.use(authMiddleware);
 router.use(checkUnidadeMiddleware);
 
 // Rotas de usuário
-router.get('/', userController.list);
-router.get('/:id', userController.show);
-router.post('/', validateZod(createUserSchema), userController.create);
-router.put('/:id', validateZod(updateUserSchema), userController.update);
-router.delete('/:id', userController.delete);
+router.get('/', (req, res, next) => userController.list(req, res, next));
+router.post('/', (req, res, next) => userController.create(req, res, next));
+router.get('/:id', (req, res, next) => userController.show(req, res, next));
+router.put('/:id', (req, res, next) => userController.update(req, res, next));
+router.delete('/:id', (req, res, next) => userController.delete(req, res, next));
 
 export default router;

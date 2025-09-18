@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import appointmentController from '../controllers/AppointmentController';
-import { authMiddleware } from '../middlewares/authMiddleware';
+import authMiddleware from '../middlewares/authMiddleware';
 import { checkUnidadeMiddleware } from '../middlewares/checkUnidadeMiddleware';
 
 const router = Router();

@@ -9,7 +9,7 @@ interface JwtPayload {
   exp: number;
 }
 
-export function authenticateToken(req: Request, res: Response, next: NextFunction) {
+export default function authenticateToken(req: Request, res: Response, next: NextFunction) {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1]; // "Bearer <token>"
 

@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import consultationController from '../controllers/ConsultationController';
-import { authMiddleware } from '../middlewares/authMiddleware';
+import authMiddleware from '../middlewares/authMiddleware';
 import { checkUnidadeMiddleware } from '../middlewares/checkUnidadeMiddleware';
 
 const router = Router();
