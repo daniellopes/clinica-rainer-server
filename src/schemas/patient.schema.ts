@@ -138,11 +138,13 @@ export const listPatientsSchema = z.object({
   page: z
     .string()
     .optional()
-    .transform((val) => (val ? parseInt(val) : 1)),
+    .transform((val) => (val ? parseInt(val) : 1))
+    .refine((val) => !isNaN(val) && val > 0, 'Página deve ser um número positivo'),
   limit: z
     .string()
     .optional()
-    .transform((val) => (val ? parseInt(val) : 10)),
+    .transform((val) => (val ? parseInt(val) : 10))
+    .refine((val) => !isNaN(val) && val > 0 && val <= 100, 'Limite deve ser entre 1 e 100'),
   search: z.string().optional(),
   unidade: z.enum(['BARRA', 'TIJUCA']).optional(),
   status: z.enum(['ATIVO', 'INATIVO', 'BLOQUEADO']).optional(),

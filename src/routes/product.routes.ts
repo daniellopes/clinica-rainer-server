@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { ProductController } from '../controllers/ProductController';
-import { authMiddleware } from '../middlewares/authMiddleware';
+import authMiddleware from '../middlewares/authMiddleware';
 import { checkUnidadeMiddleware } from '../middlewares/checkUnidadeMiddleware';
 import {
   validateZod,

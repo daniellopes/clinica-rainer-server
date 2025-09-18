@@ -7,7 +7,7 @@ import dotenv from 'dotenv';
 import routes from './routes';
 import { errorHandler } from './middlewares/errorHandler';
 import { notFoundHandler } from './middlewares/notFoundHandler';
-import { apiRateLimit } from './middlewares/rateLimitMiddleware';
+// Rate limiting removido
 
 // Carregar variáveis de ambiente
 dotenv.config();
@@ -22,7 +22,7 @@ const corsOptions = {
   ) {
     // Lista de origens permitidas
     const allowedOrigins = [
-      'http://localhost:3000', // Desenvolvimento
+      'http://localhost:3001', // Desenvolvimento
       'https://clinica-rainer-frontend.vercel.app', // Produção
       'https://staging-clinica-rainer-frontend.vercel.app', // Staging (se houver)
     ];
@@ -41,8 +41,7 @@ const corsOptions = {
   allowedHeaders: ['Content-Type', 'Authorization', 'x-unidade'],
 };
 
-// Rate limiting geral (aplicado antes de outros middlewares)
-app.use(apiRateLimit);
+// Rate limiting removido - sem limitações de requisições
 
 // Configuração de segurança aprimorada
 app.use(
@@ -96,7 +95,7 @@ app.listen(PORT, () => {
   // eslint-disable-next-line no-console
   console.log(`📡 Health check: http://localhost:${PORT}/health`);
   // eslint-disable-next-line no-console
-  console.log(`🔒 Rate limiting enabled`);
+  console.log(`🔓 Rate limiting disabled`);
   // eslint-disable-next-line no-console
   console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
 });

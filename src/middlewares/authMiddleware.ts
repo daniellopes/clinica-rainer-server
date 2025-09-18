@@ -3,13 +3,12 @@ import jwt from 'jsonwebtoken';
 
 interface JwtPayload {
   id: string;
-  role: string;
   unidade: string;
   iat: number;
   exp: number;
 }
 
-export function authenticateToken(req: Request, res: Response, next: NextFunction) {
+export default function authenticateToken(req: Request, res: Response, next: NextFunction) {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1]; // "Bearer <token>"
 
@@ -19,8 +18,7 @@ export function authenticateToken(req: Request, res: Response, next: NextFunctio
 
   const jwtSecret = process.env.JWT_SECRET;
   if (!jwtSecret) {
-    return res.status(500).json({ error: 'JWT_SECRET não configurado no servidor' });
-  }
+    return res.status(500).json({ error: 'JWT_SECRET não configurado no servidor' });  }
 
   jwt.verify(token, jwtSecret, (err, decoded) => {
     if (err) {

@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { PermissionController } from '../controllers/PermissionController';
-import { authMiddleware } from '../middlewares/authMiddleware';
+import authMiddleware from '../middlewares/authMiddleware';
 import { authorize } from '../middlewares/authorizationMiddleware';
 import { PermissaoTipo } from '@prisma/client';
 

@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { ProcedureController } from '../controllers/ProcedureController';
-import { authMiddleware } from '../middlewares/authMiddleware';
+import authMiddleware from '../middlewares/authMiddleware';
 import { checkUnidadeMiddleware } from '../middlewares/checkUnidadeMiddleware';
 import { auditMiddleware } from '../middlewares/auditMiddleware';
 import {
