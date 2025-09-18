@@ -99,26 +99,3 @@ app.listen(PORT, () => {
   // eslint-disable-next-line no-console
   console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
 });
-
-function listarRotas(app: any) {
-  console.log('📌 Rotas registradas:');
-  app._router.stack.forEach((middleware: any) => {
-    if (middleware.route) {
-      // rota simples
-      console.log(
-        `${Object.keys(middleware.route.methods)} ${middleware.route.path}`,
-      );
-    } else if (middleware.name === 'router' && middleware.handle.stack) {
-      // router (subrotas)
-      middleware.handle.stack.forEach((handler: any) => {
-        if (handler.route) {
-          console.log(
-            `${Object.keys(handler.route.methods)} ${handler.route.path}`,
-          );
-        }
-      });
-    }
-  });
-}
-
-listarRotas(app);
