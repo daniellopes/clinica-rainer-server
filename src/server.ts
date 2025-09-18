@@ -120,4 +120,5 @@ function listarRotas(app: any) {
     }
   });
 }
+
 listarRotas(app);
