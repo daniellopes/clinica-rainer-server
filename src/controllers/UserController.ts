@@ -3,6 +3,16 @@ import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import { AppError } from '../middlewares/errorHandler';
 
+// Extensão da interface Request para incluir userUnidade
+declare global {
+  namespace Express {
+    interface Request {
+      userUnidade?: string;
+      userId?: string;
+    }
+  }
+}
+
 const prisma = new PrismaClient();
 
 /**
