@@ -18,7 +18,7 @@ const router = Router();
 router.use('/auth', authRoutes);
 router.use('/users', userRoutes);
 router.use('/patients', patientRoutes);
-router.use('/patient-validate', patientValidateRoutes); // Rota independente sem autenticação
+router.use('/patient-validate', patientValidateRoutes); 
 router.use('/procedures', procedureRoutes);
 router.use('/products', productRoutes);
 router.use('/permissions', permissionRoutes);

@@ -35,20 +35,25 @@ export const checkUnidadeMiddleware = (
   }
 
   if (unidadeHeader !== req.userUnidade) {
-    console.log('❌ [UNIDADE DEBUG] Unidade do header não confere com a do token:', {
-      headerUnidade: unidadeHeader,
-      tokenUnidade: req.userUnidade,
-    });
+    if ((req as any).user?.role === 'ADMIN') {
+      console.log('⚠️ [UNIDADE DEBUG] Admin acessando outra unidade:', {
+        headerUnidade: unidadeHeader,
+        tokenUnidade: req.userUnidade,
+      });
+      return next();
+    }
+
     return res.status(403).json({
       success: false,
       message: 'Acesso não permitido para esta unidade',
       error: 'UNIDADE_ACCESS_DENIED',
       details: {
         headerUnidade: unidadeHeader,
-        tokenUnidade: req.userUnidade
-      }
+        tokenUnidade: req.userUnidade,
+      },
     });
   }
+
 
   console.log('✅ [UNIDADE DEBUG] Verificação de unidade bem-sucedida');
   return next();
