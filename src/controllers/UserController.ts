@@ -48,10 +48,12 @@ export class UserController {
       });
 
       return res.json({
-        users,
+        success: true,
+        data: users,
         total: users.length,
         unidade: req.userUnidade,
       });
+
     } catch (error) {
       next(error);
     }
