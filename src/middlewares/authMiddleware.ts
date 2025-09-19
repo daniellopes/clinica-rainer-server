@@ -3,31 +3,50 @@ import jwt from 'jsonwebtoken';
 
 interface JwtPayload {
   id: string;
+  nome: string;
+  email: string;
+  role: string;
   unidade: string;
-  iat: number;
-  exp: number;
+  iat?: number;
+  exp?: number;
+}
+
+
+declare global {
+  namespace Express {
+    interface Request {
+      userId?: string;
+      userUnidade?: string;
+      userRole?: string;
+      user?: JwtPayload;
+    }
+  }
 }
 
 export default function authenticateToken(req: Request, res: Response, next: NextFunction) {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1]; // "Bearer <token>"
+  try {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
 
-  if (!token) {
-    return res.status(401).json({ error: 'Token não fornecido' });
-  }
-
-  const jwtSecret = process.env.JWT_SECRET;
-  if (!jwtSecret) {
-    return res.status(500).json({ error: 'JWT_SECRET não configurado no servidor' });  }
-
-  jwt.verify(token, jwtSecret, (err, decoded) => {
-    if (err) {
-      return res.status(403).json({ error: 'Token inválido ou expirado' });
+    if (!token) {
+      return res.status(401).json({ error: 'Token não fornecido' });
     }
 
-    // ✅ injeta os dados do usuário no request
-    (req as any).user = decoded as JwtPayload;
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      return res.status(500).json({ error: 'JWT_SECRET não configurado no servidor' });
+    }
+
+    const decoded = jwt.verify(token, jwtSecret) as JwtPayload;
+
+    req.userId = decoded.id;
+    req.userUnidade = decoded.unidade;
+    req.userRole = decoded.role;
+    req.user = decoded;
 
     next();
-  });
+  } catch (err) {
+    console.error('❌ Erro ao validar token:', err);
+    return res.status(403).json({ error: 'Token inválido ou expirado' });
+  }
 }

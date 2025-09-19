@@ -53,7 +53,7 @@ const AuthController = {
 
       const expiresInSeconds = 24 * 60 * 60; // 1 dia
       const token = jwt.sign(
-        { id: user.id, role: user.role, unidade: user.unidade },
+        { id: user.id, nome: user.nome, email: user.email, role: user.role, unidade: user.unidade },
         jwtSecret,
         { expiresIn: expiresInSeconds },
       );
