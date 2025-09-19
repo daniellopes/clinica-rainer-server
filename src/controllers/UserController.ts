@@ -45,7 +45,7 @@ export class UserController {
 
       return res.json({
         success: true,
-        data: users,
+        users,                
         total: users.length,
         unidade: req.userUnidade,
         message: `${users.length} usuário(s) encontrado(s)`,
@@ -54,6 +54,7 @@ export class UserController {
       next(error);
     }
   }
+
 
   /**
    * Busca usuário por ID
