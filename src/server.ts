@@ -16,6 +16,8 @@ const app = express();
 
 app.use(apiRateLimit as RequestHandler);
 
+app.set('trust proxy', 1); 
+
 app.use(
   helmet({
     contentSecurityPolicy: {
