@@ -7,14 +7,14 @@ import dotenv from 'dotenv';
 import routes from './routes';
 import { errorHandler } from './middlewares/errorHandler';
 import { notFoundHandler } from './middlewares/notFoundHandler';
-import { apiRateLimit } from './middlewares/rateLimitMiddleware';
+import { apiRateLimitMiddleware } from './middlewares/rateLimitMiddleware';
 
 // Carregar variáveis de ambiente
 dotenv.config();
 
 const app = express();
 
-app.use(apiRateLimit);
+app.use(apiRateLimitMiddleware);
 app.use('/api', routes);
 app.use(notFoundHandler);
 app.use(errorHandler);
