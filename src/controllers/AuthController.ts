@@ -17,6 +17,10 @@ const AuthController = {
    */
   login: async (req: Request, res: Response, next: NextFunction) => {
     try {
+      // 🔎 Debug: logar tudo que chega
+      console.log("📥 [LOGIN] Body recebido:", req.body);
+      console.log("📥 [LOGIN] Headers recebidos:", req.headers);
+
       const { email, senha, unidade } = req.body;
 
       // Validação básica de entrada
@@ -47,17 +51,20 @@ const AuthController = {
       });
 
       if (!user) {
+        console.warn("⚠️ [LOGIN] Usuário não encontrado:", { email, unidade });
         throw new AppError('Credenciais inválidas', 401, 'INVALID_CREDENTIALS');
       }
 
       // Verificar se usuário está ativo
       if (!user.ativo) {
+        console.warn("⚠️ [LOGIN] Usuário inativo:", { email, unidade });
         throw new AppError('Usuário inativo', 401, 'USER_INACTIVE');
       }
 
       // Verificar senha
       const isValidPassword = await bcrypt.compare(senha, user.senha);
       if (!isValidPassword) {
+        console.warn("⚠️ [LOGIN] Senha incorreta para:", { email, unidade });
         throw new AppError('Credenciais inválidas', 401, 'INVALID_CREDENTIALS');
       }
 
@@ -84,8 +91,7 @@ const AuthController = {
       // Remover senha dos dados do usuário
       const { senha: _, ...userData } = user;
 
-      // Log seguro de login bem-sucedido
-      // Login successful
+      console.log("✅ [LOGIN] Sucesso:", { id: user.id, email: user.email, unidade: user.unidade });
 
       return res.status(200).json({
         message: 'Login realizado com sucesso',
@@ -94,10 +100,8 @@ const AuthController = {
         expiresIn: '1d',
       });
     } catch (error) {
-      // Log seguro de tentativa de login falhou
-      const { email, unidade } = req.body;
-      // Login attempt failed
-
+      // 🔴 Debug: log do erro
+      console.error("❌ [LOGIN] Erro no login:", error);
       next(error);
     }
   },
@@ -108,7 +112,6 @@ const AuthController = {
    */
   register: async (req: Request, res: Response, next: NextFunction) => {
     try {
-      // TODO: Implementar lógica de registro
       throw new AppError(
         'Funcionalidade em desenvolvimento',
         501,
