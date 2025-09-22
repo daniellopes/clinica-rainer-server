@@ -5,6 +5,7 @@ import compression from 'compression';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
 import routes from './routes';
+import { RequestHandler } from 'express';
 import { errorHandler } from './middlewares/errorHandler';
 import { notFoundHandler } from './middlewares/notFoundHandler';
 import { apiRateLimit } from './middlewares/rateLimitMiddleware';
@@ -13,8 +14,7 @@ dotenv.config();
 
 const app = express();
 
-// ✅ agora funciona sem erro de tipagem
-app.use(apiRateLimit);
+app.use(apiRateLimit as RequestHandler);
 
 app.use(
   helmet({
