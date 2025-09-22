@@ -16,6 +16,9 @@ const app = express();
 
 // Rate limiting geral (aplicado antes de outros middlewares)
 app.use(apiRateLimit);
+app.use('/api', routes);
+app.use(notFoundHandler);
+app.use(errorHandler);
 
 // Configuração de segurança aprimorada
 app.use(
