@@ -14,7 +14,6 @@ dotenv.config();
 
 const app = express();
 
-// Rate limiting geral (aplicado antes de outros middlewares)
 app.use(apiRateLimit);
 app.use('/api', routes);
 app.use(notFoundHandler);
