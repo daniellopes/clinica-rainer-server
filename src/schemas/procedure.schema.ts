@@ -25,6 +25,11 @@ export const createProcedureSchema = z.object({
 
   categoria: z.string().min(2, 'Categoria é obrigatória'),
 
+  especialidades: z
+    .array(z.string().min(2, 'Especialidade deve ter pelo menos 2 caracteres'))
+    .optional()
+    .default([]),
+
   ativo: z.boolean().optional().default(true),
 });
 

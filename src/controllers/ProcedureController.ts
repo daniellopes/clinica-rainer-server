@@ -13,6 +13,7 @@ const prisma = new PrismaClient();
 
 export class ProcedureController {
   // Criar novo procedimento
+  // Criar novo procedimento
   async create(req: Request, res: Response) {
     try {
       const validatedData = createProcedureSchema.parse(req.body);
@@ -39,6 +40,7 @@ export class ProcedureController {
           categoria: validatedData.categoria,
           duracao: validatedData.duracao,
           valor: validatedData.preco,
+          especialidades: validatedData.especialidades ?? [], // 👈 agora salva
           ativo: validatedData.ativo ?? true,
           unidade: userUnidade as any,
         },
@@ -64,6 +66,7 @@ export class ProcedureController {
       );
     }
   }
+
 
   // Listar procedimentos com filtros e paginação
   async list(req: Request, res: Response) {
@@ -260,6 +263,7 @@ export class ProcedureController {
   }
 
   // Atualizar procedimento
+  // Atualizar procedimento
   async update(req: Request, res: Response) {
     try {
       const { id } = req.params;
@@ -310,6 +314,8 @@ export class ProcedureController {
       if (validatedData.preco) updateData.valor = validatedData.preco;
       if (validatedData.ativo !== undefined)
         updateData.ativo = validatedData.ativo;
+      if (validatedData.especialidades !== undefined) // 👈 atualização
+        updateData.especialidades = validatedData.especialidades;
 
       const updatedProcedure = await prisma.procedure.update({
         where: { id },
@@ -336,6 +342,7 @@ export class ProcedureController {
       );
     }
   }
+
 
   // Excluir procedimento (lógica de negócio sem soft delete por limitação do schema)
   async delete(req: Request, res: Response) {
