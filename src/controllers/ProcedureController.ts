@@ -40,7 +40,7 @@ export class ProcedureController {
           categoria: validatedData.categoria,
           duracao: validatedData.duracao,
           valor: validatedData.preco,
-          especialidades: validatedData.especialidades ?? [], // 👈 agora salva
+          especialidades: validatedData.especialidades ?? [], 
           ativo: validatedData.ativo ?? true,
           unidade: userUnidade as any,
         },
@@ -126,6 +126,7 @@ export class ProcedureController {
           ativo: true,
           createdAt: true,
           updatedAt: true,
+          especialidades: true,
         },
       });
 
