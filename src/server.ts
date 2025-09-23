@@ -16,8 +16,9 @@ const app = express();
 
 app.use(apiRateLimit as RequestHandler);
 
-app.set('trust proxy', 1); 
+app.set('trust proxy', 1);
 
+// Helmet (segurança)
 app.use(
   helmet({
     contentSecurityPolicy: {
@@ -31,14 +32,29 @@ app.use(
   }),
 );
 
+// Configuração de CORS
+const allowedOrigins = [
+  process.env.FRONTEND_URL || 'http://localhost:3000',
+  'https://clinica-rainer-frontend.vercel.app', // produção
+];
+
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error(`CORS bloqueado para origin: ${origin}`));
+      }
+    },
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'x-unidade'],
   }),
 );
+
+// Garantir resposta para preflight (OPTIONS)
+app.options('*', cors());
 
 app.use(compression());
 app.use(express.json({ limit: '10mb' }));
@@ -48,6 +64,7 @@ if (process.env.NODE_ENV !== 'production') {
   app.use(morgan('dev'));
 }
 
+// Healthcheck
 app.get('/health', (req, res) => {
   res.status(200).json({
     status: 'OK',
@@ -57,8 +74,10 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Rotas
 app.use('/api', routes);
 
+// Middlewares finais
 app.use(notFoundHandler);
 app.use(errorHandler);
 
