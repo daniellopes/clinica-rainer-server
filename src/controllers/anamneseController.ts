@@ -34,6 +34,7 @@ const updateTemplateSchema = z.object({
   especialidade: z.string().optional(),
   campos: z.any().optional(),
   ativo: z.boolean().optional(),
+  unidade: z.enum(['BARRA', 'TIJUCA']).optional(),
 });
 
 // Buscar anamneses de um paciente através das consultas
@@ -303,8 +304,12 @@ export const updateAnamneseTemplate = async (req: Request, res: Response) => {
 
     const updatedTemplate = await prisma.anamnesisForm.update({
       where: { id },
-      data: validatedData,
+      data: {
+        ...validatedData,
+        unidade: validatedData.unidade || existingTemplate.unidade,
+      },
     });
+
 
     res.json({
       data: updatedTemplate,

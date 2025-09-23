@@ -35,7 +35,7 @@ export const createProcedureSchema = z.object({
 
 // Schema para atualização (todos os campos opcionais)
 export const updateProcedureSchema = createProcedureSchema.partial().extend({
-  id: z.string().cuid('ID inválido').optional(),
+  id: z.string().uuid('ID inválido').optional(),
 });
 
 // Schema para listagem com filtros
@@ -65,7 +65,7 @@ export const listProceduresSchema = z.object({
 
 // Schema para busca por ID
 export const getProcedureByIdSchema = z.object({
-  id: z.string().cuid('ID inválido'),
+  id: z.string().uuid('ID inválido'),
 });
 
 // Schema para busca por categoria
