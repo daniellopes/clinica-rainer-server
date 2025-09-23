@@ -5,7 +5,7 @@ import { UserRole } from '@prisma/client';
 interface TokenPayload {
   id: string;
   role: UserRole;
-  unidade: string;
+  unidade?: string; // pode ser opcional
   iat: number;
   exp: number;
 }
@@ -39,15 +39,15 @@ export const authMiddleware = (
     });
   }
 
-  // Extrair token do header
-  const token = authorization.replace('Bearer', '').trim();
-
-  if (!token) {
+  // Extrair token (formato esperado: "Bearer <token>")
+  const parts = authorization.split(' ');
+  if (parts.length !== 2 || parts[0] !== 'Bearer') {
     return res.status(401).json({
-      error: 'Formato de token inválido',
+      error: 'Formato de token inválido. Use: Bearer <token>',
       code: 'INVALID_TOKEN_FORMAT',
     });
   }
+  const token = parts[1].trim();
 
   // Verificar se JWT_SECRET existe
   const jwtSecret = process.env.JWT_SECRET;
@@ -64,7 +64,7 @@ export const authMiddleware = (
     const data = jwt.verify(token, jwtSecret) as TokenPayload;
 
     // Validar payload do token
-    if (!data.id || !data.role || !data.unidade) {
+    if (!data.id || !data.role) {
       return res.status(401).json({
         error: 'Token com dados incompletos',
         code: 'INCOMPLETE_TOKEN',
@@ -74,15 +74,21 @@ export const authMiddleware = (
     // Adicionar dados do usuário ao request
     req.userId = data.id;
     req.userRole = data.role;
-    req.userUnidade = data.unidade;
+    req.userUnidade = data.unidade || 'BARRA'; // 👈 fallback seguro
 
     return next();
-  } catch (error) {
-    // Log do erro para debugging (sem expor detalhes)
-    // Token verification failed - invalid or expired
+  } catch (error: any) {
+    if (error.name === 'TokenExpiredError') {
+      console.warn('⚠️ Token expirado');
+      return res.status(401).json({
+        error: 'Token expirado',
+        code: 'TOKEN_EXPIRED',
+      });
+    }
 
+    console.error('❌ Erro ao verificar token:', error.message);
     return res.status(401).json({
-      error: 'Token inválido ou expirado',
+      error: 'Token inválido ou corrompido',
       code: 'INVALID_TOKEN',
     });
   }
