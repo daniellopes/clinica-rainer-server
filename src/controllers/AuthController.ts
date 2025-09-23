@@ -81,11 +81,12 @@ const AuthController = {
       const token = jwt.sign(
         {
           id: user.id,
+          email: user.email,
           role: user.role,
           unidade: user.unidade,
         },
         jwtSecret,
-        { expiresIn: '1d' },
+        { expiresIn: '8h' },
       );
 
       // Remover senha dos dados do usuário
