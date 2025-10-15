@@ -40,6 +40,7 @@ model User {
   agendamentosCriados   Appointment[]        @relation("AgendamentoCriadoPor")
   agendamentosMedico    Appointment[]        @relation("AgendamentoMedico")
   consultasRealizadas   Consultation[]       @relation("ConsultaRealizadaPor")
+  recipe_templates      RecipeTemplate[]
   movimentacoesEstoque  StockMovement[]      @relation("MovimentacaoCriadaPor")
   transacoesFinanceiras Transaction[]        @relation("TransacaoCriadaPor")
   permissoes            UserPermission[]
@@ -48,7 +49,7 @@ model User {
 }
 
 model RolePermission {
-  id        String        @id @default(uuid())
+  id        String        @id
   role      UserRole
   permissao PermissaoTipo
   unidade   Unidade
@@ -331,7 +332,8 @@ model Consultation {
   patient             Patient             @relation(fields: [patientId], references: [id])
   procedure           Procedure           @relation(fields: [procedureId], references: [id])
   receitas            Recipe[]
-
+  planosTerapeuticos  PlanoTerapeutico[]
+  
   @@index([unidade])
   @@index([dataConsulta])
   @@index([patientId])
@@ -340,17 +342,22 @@ model Consultation {
 }
 
 model RecipeTemplate {
-  id            String   @id @default(uuid())
+  id            String                 @id @default(uuid())
   nome          String
-  template      String
-  especialidade String?
-  ativo         Boolean  @default(true)
+  ativo         Boolean                @default(true)
   unidade       Unidade
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
+  conteudo      String
+  criadoPorId   String?
+  descricao     String?
+  observacoes   String?
+  especialidade EspecialidadeTemplate?
+  users         User?                  @relation(fields: [criadoPorId], references: [id])
   receitas      Recipe[]
 
   @@index([unidade, ativo])
+  @@index([especialidade])
   @@map("recipe_templates")
 }
 
@@ -557,4 +564,30 @@ enum StatusFinanceiro {
   PAGO
   VENCIDO
   CANCELADO
+}
+
+enum EspecialidadeTemplate {
+  ESTETICA
+  DERMATOLOGIA
+  CIRURGIA
+  NUTRICIONISTA
+  BIOMEDICA
+  ORTOMOLECULAR
+}
+
+model PlanoTerapeutico {
+  id                String        @id @default(uuid())
+  consultationId    String
+  medicamento       String
+  dosagem           String
+  frequencia        String
+  quantidadeSessoes Int
+  observacoes       String?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  consultation      Consultation  @relation(fields: [consultationId], references: [id])
+
+  @@index([consultationId])
+  @@map("plano_terapeutico")
 }

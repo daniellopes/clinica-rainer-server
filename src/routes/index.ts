@@ -10,13 +10,14 @@ import auditRoutes from './audit.routes';
 import anamneseRoutes from './anamnese.routes';
 import appointmentRoutes from './appointment.routes';
 import consultationRoutes from './consultation.routes';
+import planoTerapeuticoRoutes from './planoTerapeuticoRoutes';
 
 const router = Router();
 
 router.use('/auth', authRoutes);
 router.use('/users', userRoutes);
 router.use('/patients', patientRoutes);
-router.use('/patient-validate', patientValidateRoutes); // Rota independente sem autenticação
+router.use('/patient-validate', patientValidateRoutes); 
 router.use('/procedures', procedureRoutes);
 router.use('/products', productRoutes);
 router.use('/permissions', permissionRoutes);
@@ -24,5 +25,6 @@ router.use('/audit', auditRoutes);
 router.use('/anamnese', anamneseRoutes);
 router.use('/appointments', appointmentRoutes);
 router.use('/consultations', consultationRoutes);
+router.use('/plano-terapeutico', planoTerapeuticoRoutes);
 
 export default router;
