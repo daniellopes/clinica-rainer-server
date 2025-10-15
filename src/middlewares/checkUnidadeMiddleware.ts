@@ -9,7 +9,6 @@ export const checkUnidadeMiddleware = (
 
   // Se não vier nada, aplica fallback
   if (!unidadeHeader || unidadeHeader.trim() === '') {
-    console.warn("⚠️ Nenhuma unidade enviada no header. Usando fallback 'BARRA'.");
     unidadeHeader = 'BARRA';
   }
 
