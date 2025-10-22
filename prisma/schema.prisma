@@ -450,42 +450,71 @@ model PlanoTerapeutico {
 }
 
 model Repasse {
-  id          String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  medico      String
-  grupo       String
-  datarepasse DateTime      @map("datarepasse")
-  observacoes String?
-  total       Decimal?      @default(0.00) @db.Decimal(12, 2)
-  createdAt   DateTime?     @default(now())
-  updatedAt   DateTime?     @default(now())
-  RepasseItem RepasseItem[]
-  unidade     Unidade
-  status        RepasseStatus  @default(PENDENTE)
-  createdById String?
-  @@map("repasse") 
+  id              String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  medico          String
+  grupo           String
+  datarepasse     DateTime      @map("datarepasse")
+  observacoes     String?
+  total           Decimal?      @default(0) @db.Decimal(12, 2)
+  createdById     String?
+  createdAt       DateTime?     @default(now())
+  updatedAt       DateTime?     @default(now())
+  unidade         Unidade
+  status          RepasseStatus @default(PENDENTE)
+  metodoPagamento String?
+  dataPagamento   DateTime?     @db.Timestamp(6)
+  RepasseItem     RepasseItem[]
+
+  @@map("repasse")
+}
+
+model RepasseItem {
+  id                     String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tipo                   String
+  flagIndividual         String[] @default([])
+  itemId                 String
+  itemNome               String
+  percentualProcedimento Decimal? @default(0.00) @db.Decimal(5, 2)
+  percentualProduto      Decimal? @default(0.00) @db.Decimal(5, 2)
+  repasseId              String   @db.Uuid
+  valorBase              Decimal
+  valorProcedimento      Decimal? @default(0.00) @db.Decimal(12, 2)
+  valorProduto           Decimal? @default(0.00) @db.Decimal(12, 2)
+  repasse                Repasse  @relation(fields: [repasseId], references: [id], onDelete: Cascade)
+
+  @@map("repasse_item")
+}
+
+model Orcamento {
+  id           String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  numero       String          @db.VarChar(255)
+  profissional String          @db.VarChar(255)
+  paciente     String          @db.VarChar(255)
+  dataCriacao  DateTime        @default(now()) @db.Timestamp(6)
+  valorTotal   Decimal         @default(0) @db.Decimal(10, 2)
+  status       OrcamentoStatus @default(PENDENTE)
+  observacoes  String?
+  createdAt    DateTime        @default(now()) @db.Timestamp(6)
+  updatedAt    DateTime        @default(now()) @updatedAt @db.Timestamp(6)
+  itens        OrcamentoItem[]
+}
+
+model OrcamentoItem {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tipo          String    @db.VarChar(50)
+  itemId        String    @db.VarChar(255)
+  itemNome      String    @db.VarChar(255)
+  quantidade    Int
+  valorUnitario Decimal   @db.Decimal(10, 2)
+  valorTotal    Decimal   @db.Decimal(10, 2)
+  orcamentoId   String    @db.Uuid
+  orcamento     Orcamento @relation(fields: [orcamentoId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 }
 
 enum RepasseStatus {
   PENDENTE
   PAGO
   CANCELADO
-}
-
-model RepasseItem {
-  id                     String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tipo                   String
-  itemId                 String
-  itemNome               String
-  valorBase              Decimal
-  percentualProcedimento Decimal? @default(0.00) @db.Decimal(5, 2)
-  valorProcedimento      Decimal? @default(0.00) @db.Decimal(12, 2)
-  percentualProduto      Decimal? @default(0.00) @db.Decimal(5, 2)
-  valorProduto           Decimal? @default(0.00) @db.Decimal(12, 2)
-  flagIndividual         String[] @default([])
-  repasseId              String   @db.Uuid
-  repasse                Repasse  @relation(fields: [repasseId], references: [id], onDelete: Cascade)
-
-  @@map("repasse_item") // 👈 nome exato da tabela no banco
 }
 
 enum TipoRelacionamento {
@@ -628,32 +657,6 @@ enum EspecialidadeTemplate {
   NUTRICIONISTA
   BIOMEDICA
   ORTOMOLECULAR
-}
-
-model Orcamento {
-  id           String          @id @default(uuid())
-  numero       String
-  profissional String
-  paciente     String
-  dataCriacao  DateTime        @default(now())
-  valorTotal   Decimal         @default(0)
-  status       OrcamentoStatus @default(PENDENTE)
-  observacoes  String?         
-  itens        OrcamentoItem[]
-  createdAt    DateTime        @default(now())
-  updatedAt    DateTime        @updatedAt
-}
-
-model OrcamentoItem {
-  id            String     @id @default(uuid())
-  tipo          String
-  itemId        String
-  itemNome      String
-  quantidade    Int
-  valorUnitario Decimal
-  valorTotal    Decimal
-  orcamentoId   String
-  orcamento     Orcamento  @relation(fields: [orcamentoId], references: [id])
 }
 
 enum OrcamentoStatus {
