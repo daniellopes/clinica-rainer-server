@@ -12,6 +12,7 @@ import appointmentRoutes from './appointment.routes';
 import consultationRoutes from './consultation.routes';
 import planoTerapeuticoRoutes from './planoTerapeuticoRoutes';
 import repasseRoutes from './repasse.routes';
+import orcamentoRoutes from './orcamentoRoutes';
 
 const router = Router();
 
@@ -28,5 +29,6 @@ router.use('/appointments', appointmentRoutes);
 router.use('/consultations', consultationRoutes);
 router.use('/plano-terapeutico', planoTerapeuticoRoutes);
 router.use('/repasses', repasseRoutes);
+router.use('/orcamentos', orcamentoRoutes);
 
 export default router;
