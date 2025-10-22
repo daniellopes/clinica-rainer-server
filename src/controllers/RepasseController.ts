@@ -28,6 +28,7 @@ export class RepasseController {
                     total,
                     unidade: unidade as Unidade,
                     createdById: userId,
+                    status: validated.status?.toUpperCase() || "PENDENTE",
                     RepasseItem: {
                         create: validated.itens.map((i) => ({
                             tipo: i.tipo,
@@ -104,6 +105,7 @@ export class RepasseController {
                     observacoes: validated.observacoes,
                     total,
                     unidade: unidade as Unidade,
+                    status: validated.status?.toUpperCase() || "PENDENTE",
                     RepasseItem: {
                         deleteMany: {},
                         create: validated.itens.map((i) => ({

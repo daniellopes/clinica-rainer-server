@@ -17,5 +17,6 @@ export const createRepasseSchema = z.object({
   grupo: z.string().min(1, 'Grupo é obrigatório'),
   dataRepasse: z.string(),
   observacoes: z.string().optional(),
+  status: z.enum(["pendente", "pago", "cancelado"]).default("pendente"),
   itens: z.array(repasseItemSchema).min(1, 'Adicione pelo menos um item'),
 });

@@ -460,8 +460,15 @@ model Repasse {
   updatedAt   DateTime?     @default(now())
   RepasseItem RepasseItem[]
   unidade     Unidade
+  status        RepasseStatus  @default(PENDENTE)
   createdById String?
   @@map("repasse") 
+}
+
+enum RepasseStatus {
+  PENDENTE
+  PAGO
+  CANCELADO
 }
 
 model RepasseItem {
