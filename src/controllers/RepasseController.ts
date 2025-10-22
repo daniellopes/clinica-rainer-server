@@ -27,10 +27,7 @@ export class RepasseController {
                     total,
                     unidade: unidade as Unidade,
                     createdById: userId,
-                    status:
-                        validated.status && validated.status.toUpperCase() in RepasseStatus
-                            ? (validated.status.toUpperCase() as RepasseStatus)
-                            : RepasseStatus.PENDENTE,
+                    status: req.body.status?.toUpperCase() || 'PENDENTE',
                     RepasseItem: {
                         create: validated.itens.map((i) => ({
                             tipo: i.tipo,
