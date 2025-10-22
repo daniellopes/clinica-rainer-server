@@ -49,7 +49,7 @@ model User {
 }
 
 model RolePermission {
-  id        String        @id @default(cuid())
+  id        String        @id @default(dbgenerated("gen_random_uuid()"))
   role      UserRole
   permissao PermissaoTipo
   unidade   Unidade
@@ -331,8 +331,8 @@ model Consultation {
   medico              User                @relation("ConsultaRealizadaPor", fields: [medicoId], references: [id])
   patient             Patient             @relation(fields: [patientId], references: [id])
   procedure           Procedure           @relation(fields: [procedureId], references: [id])
-  receitas            Recipe[]
   planosTerapeuticos  PlanoTerapeutico[]
+  receitas            Recipe[]
 
   @@index([unidade])
   @@index([dataConsulta])
@@ -431,6 +431,54 @@ model Transaction {
   @@index([dataVencimento])
   @@index([patientId])
   @@map("transactions")
+}
+
+model PlanoTerapeutico {
+  id                String       @id @default(uuid())
+  consultationId    String
+  medicamento       String
+  dosagem           String
+  frequencia        String
+  quantidadeSessoes Int
+  observacoes       String?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  consultation      Consultation @relation(fields: [consultationId], references: [id])
+
+  @@index([consultationId])
+  @@map("plano_terapeutico")
+}
+
+model Repasse {
+  id          String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  medico      String
+  grupo       String
+  datarepasse DateTime      @map("datarepasse")
+  observacoes String?
+  total       Decimal?      @default(0.00) @db.Decimal(12, 2)
+  createdAt   DateTime?     @default(now())
+  updatedAt   DateTime?     @default(now())
+  RepasseItem RepasseItem[]
+  unidade     Unidade
+  createdById String?
+  @@map("repasse") 
+}
+
+model RepasseItem {
+  id                     String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tipo                   String
+  itemId                 String
+  itemNome               String
+  valorBase              Decimal
+  percentualProcedimento Decimal? @default(0.00) @db.Decimal(5, 2)
+  valorProcedimento      Decimal? @default(0.00) @db.Decimal(12, 2)
+  percentualProduto      Decimal? @default(0.00) @db.Decimal(5, 2)
+  valorProduto           Decimal? @default(0.00) @db.Decimal(12, 2)
+  flagIndividual         String[] @default([])
+  repasseId              String   @db.Uuid
+  repasse                Repasse  @relation(fields: [repasseId], references: [id], onDelete: Cascade)
+
+  @@map("repasse_item") // 👈 nome exato da tabela no banco
 }
 
 enum TipoRelacionamento {
@@ -573,21 +621,4 @@ enum EspecialidadeTemplate {
   NUTRICIONISTA
   BIOMEDICA
   ORTOMOLECULAR
-}
-
-model PlanoTerapeutico {
-  id                String        @id @default(uuid())
-  consultationId    String
-  medicamento       String
-  dosagem           String
-  frequencia        String
-  quantidadeSessoes Int
-  observacoes       String?
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
-
-  consultation      Consultation  @relation(fields: [consultationId], references: [id])
-
-  @@index([consultationId])
-  @@map("plano_terapeutico")
 }

@@ -11,6 +11,7 @@ import anamneseRoutes from './anamnese.routes';
 import appointmentRoutes from './appointment.routes';
 import consultationRoutes from './consultation.routes';
 import planoTerapeuticoRoutes from './planoTerapeuticoRoutes';
+import repasseRoutes from './repasse.routes';
 
 const router = Router();
 
@@ -26,5 +27,6 @@ router.use('/anamnese', anamneseRoutes);
 router.use('/appointments', appointmentRoutes);
 router.use('/consultations', consultationRoutes);
 router.use('/plano-terapeutico', planoTerapeuticoRoutes);
+router.use('/repasses', repasseRoutes);
 
 export default router;
