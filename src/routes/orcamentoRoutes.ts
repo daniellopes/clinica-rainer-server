@@ -9,5 +9,6 @@ router.get('/', controller.list);
 router.get('/:id', controller.getById);
 router.patch('/:id/status', controller.updateStatus);
 router.delete('/:id', controller.remove);
+router.put('/:id', controller.update);
 
 export default router;
