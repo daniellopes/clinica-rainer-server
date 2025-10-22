@@ -1,9 +1,8 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, RepasseStatus, Unidade } from '@prisma/client';
 import { createRepasseSchema } from '../schemas/repasse.schema';
 import { z } from 'zod';
 import { ErrorHandler } from '../utils/errorHandler';
-import { Unidade } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -28,7 +27,10 @@ export class RepasseController {
                     total,
                     unidade: unidade as Unidade,
                     createdById: userId,
-                    status: validated.status?.toUpperCase() || "PENDENTE",
+                    status:
+                        validated.status && validated.status.toUpperCase() in RepasseStatus
+                            ? (validated.status.toUpperCase() as RepasseStatus)
+                            : RepasseStatus.PENDENTE,
                     RepasseItem: {
                         create: validated.itens.map((i) => ({
                             tipo: i.tipo,
@@ -45,6 +47,7 @@ export class RepasseController {
                 },
                 include: { RepasseItem: true },
             });
+
 
 
             res.status(201).json({ message: 'Repasse criado com sucesso', repasse });
@@ -105,7 +108,11 @@ export class RepasseController {
                     observacoes: validated.observacoes,
                     total,
                     unidade: unidade as Unidade,
-                    status: validated.status?.toUpperCase() || "PENDENTE",
+                    status:
+                        validated.status && validated.status.toUpperCase() in RepasseStatus
+                            ? (validated.status.toUpperCase() as RepasseStatus)
+                            : RepasseStatus.PENDENTE,
+
                     RepasseItem: {
                         deleteMany: {},
                         create: validated.itens.map((i) => ({
