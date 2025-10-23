@@ -51,6 +51,11 @@ export const createProductSchema = z.object({
     .max(999999.99, 'Preço de venda muito alto')
     .optional(),
 
+  codigoInterno: z
+    .string()
+    .max(50, 'Código interno deve ter no máximo 50 caracteres')
+    .optional(),
+
   ativo: z.boolean().optional().default(true),
 });
 

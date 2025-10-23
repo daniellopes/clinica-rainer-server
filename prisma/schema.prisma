@@ -213,6 +213,7 @@ model Product {
   unidade       Unidade
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
+  codigoInterno String?         @unique @db.VarChar(50)
   lotes         ProductBatch[]
   movimentacoes StockMovement[]
 

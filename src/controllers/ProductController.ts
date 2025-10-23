@@ -6,8 +6,6 @@ import {
   listProductsSchema,
   adjustStockSchema,
 } from '../schemas/product.schema';
-import { z } from 'zod';
-import { AppError } from '../middlewares/errorHandler';
 import { ErrorHandler } from '../utils/errorHandler';
 
 const prisma = new PrismaClient();
@@ -19,59 +17,39 @@ export class ProductController {
       const validatedData = createProductSchema.parse(req.body);
       const unidade = (req as any).userUnidade!;
 
-      // Verificar se já existe produto com o mesmo nome na unidade
+      // Verifica duplicidade de nome
       const existingProduct = await prisma.product.findFirst({
-        where: {
-          nome: validatedData.nome,
-          unidade: unidade as any,
-        },
+        where: { nome: validatedData.nome, unidade },
       });
 
-      if (existingProduct) {
-        return res.status(400).json({
-          error: 'Já existe um produto com este nome nesta unidade',
-        });
-      }
+      if (existingProduct)
+        return res.status(400).json({ error: 'Já existe um produto com este nome nesta unidade' });
 
-      // Verificar código de barras se fornecido
+      // Verifica duplicidade de código de barras
       if (validatedData.codigoBarras) {
         const existingBarcode = await prisma.product.findFirst({
-          where: {
-            codigoBarras: validatedData.codigoBarras,
-            unidade: unidade as any,
-          },
+          where: { codigoBarras: validatedData.codigoBarras, unidade },
         });
 
-        if (existingBarcode) {
-          return res.status(400).json({
-            error: 'Já existe um produto com este código de barras',
-          });
-        }
+        if (existingBarcode)
+          return res.status(400).json({ error: 'Já existe um produto com este código de barras' });
       }
 
       const product = await prisma.product.create({
         data: {
           ...validatedData,
-          unidade: unidade as any,
-          estoqueAtual: 0, // Iniciar com estoque zerado
+          unidade,
+          estoqueAtual: 0,
         },
       });
 
-      res.status(201).json({
-        message: 'Produto criado com sucesso',
-        product,
-      });
+      res.status(201).json({ message: 'Produto criado com sucesso', product });
     } catch (error) {
-      return ErrorHandler.handleError(
-        error,
-        res,
-        'ProductController.create',
-        'Erro ao criar produto'
-      );
+      return ErrorHandler.handleError(error, res, 'ProductController.create', 'Erro ao criar produto');
     }
   }
 
-  // Listar produtos com filtros
+  // Listar produtos
   async list(req: Request, res: Response) {
     try {
       const validatedQuery = listProductsSchema.parse(req.query);
@@ -83,17 +61,13 @@ export class ProductController {
         search,
         categoria,
         ativo,
-        estoqueMinimo,
         orderBy = 'nome',
         orderDirection = 'asc',
       } = validatedQuery;
 
       const skip = (page - 1) * limit;
 
-      // Construir filtros
-      const where: any = {
-        unidade: unidade as any,
-      };
+      const where: any = { unidade };
 
       if (search) {
         where.OR = [
@@ -105,22 +79,11 @@ export class ProductController {
         ];
       }
 
-      if (categoria) {
-        where.categoria = { contains: categoria, mode: 'insensitive' };
-      }
+      if (categoria) where.categoria = { contains: categoria, mode: 'insensitive' };
+      if (ativo !== undefined) where.ativo = ativo;
 
-      if (ativo !== undefined) {
-        where.ativo = ativo;
-      }
-
-      if (estoqueMinimo) {
-        where.estoqueAtual = { lte: prisma.product.fields.estoqueMinimo };
-      }
-
-      // Contar total de registros
       const total = await prisma.product.count({ where });
 
-      // Buscar produtos
       const products = await prisma.product.findMany({
         where,
         skip,
@@ -131,6 +94,7 @@ export class ProductController {
           nome: true,
           descricao: true,
           categoria: true,
+          codigoInterno: true, 
           codigoBarras: true,
           fabricante: true,
           estoqueMinimo: true,
@@ -144,26 +108,19 @@ export class ProductController {
         },
       });
 
-      const totalPages = Math.ceil(total / limit);
-
       res.json({
         products,
         pagination: {
           currentPage: page,
-          totalPages,
+          totalPages: Math.ceil(total / limit),
           totalItems: total,
           itemsPerPage: limit,
-          hasNextPage: page < totalPages,
+          hasNextPage: page * limit < total,
           hasPreviousPage: page > 1,
         },
       });
     } catch (error) {
-      return ErrorHandler.handleError(
-        error,
-        res,
-        'ProductController.list',
-        'Erro ao listar produtos'
-      );
+      return ErrorHandler.handleError(error, res, 'ProductController.list', 'Erro ao listar produtos');
     }
   }
 
@@ -174,71 +131,48 @@ export class ProductController {
       const unidade = (req as any).userUnidade!;
 
       const product = await prisma.product.findFirst({
-        where: {
-          id,
-          unidade: unidade as any,
-        },
+        where: { id, unidade },
         include: {
-          lotes: {
-            where: { ativo: true },
-            orderBy: { validade: 'asc' },
-          },
+          lotes: { where: { ativo: true }, orderBy: { validade: 'asc' } },
           movimentacoes: {
-            take: 10,
+            take: 50,
             orderBy: { createdAt: 'desc' },
-            include: {
-              criadoPor: {
-                select: { nome: true },
-              },
-            },
+            include: { criadoPor: { select: { id: true, nome: true } } },
           },
         },
       });
 
-      if (!product) {
-        return res.status(404).json({
-          error: 'Produto não encontrado',
-        });
-      }
+      if (!product) return res.status(404).json({ error: 'Produto não encontrado' });
 
-      res.json({ product });
+      const stockMovements = product.movimentacoes.map((m) => ({
+        id: m.id,
+        tipo: m.tipo,
+        quantidade: m.quantidade,
+        motivo: m.motivo,
+        observacoes: m.observacoes,
+        usuarioId: m.criadoPorId,
+        usuarioNome: m.criadoPor?.nome || 'Desconhecido',
+        createdAt: m.createdAt,
+      }));
+
+      res.json({ product: { ...product, stockMovements } });
     } catch (error) {
-      return ErrorHandler.handleError(
-        error,
-        res,
-        'ProductController.getById',
-        'Erro ao buscar produto'
-      );
+      return ErrorHandler.handleError(error, res, 'ProductController.getById', 'Erro ao buscar produto');
     }
   }
 
-  // Buscar produto por código de barras
+  // Buscar por código de barras
   async getByBarcode(req: Request, res: Response) {
     try {
       const { codigoBarras } = req.params;
       const unidade = (req as any).userUnidade!;
 
-      const product = await prisma.product.findFirst({
-        where: {
-          codigoBarras,
-          unidade: unidade as any,
-        },
-      });
-
-      if (!product) {
-        return res.status(404).json({
-          error: 'Produto não encontrado',
-        });
-      }
+      const product = await prisma.product.findFirst({ where: { codigoBarras, unidade } });
+      if (!product) return res.status(404).json({ error: 'Produto não encontrado' });
 
       res.json({ product });
     } catch (error) {
-      return ErrorHandler.handleError(
-        error,
-        res,
-        'ProductController.getByBarcode',
-        'Erro ao buscar produto por código de barras'
-      );
+      return ErrorHandler.handleError(error, res, 'ProductController.getByBarcode', 'Erro ao buscar produto por código de barras');
     }
   }
 
@@ -249,113 +183,50 @@ export class ProductController {
       const validatedData = updateProductSchema.parse(req.body);
       const unidade = (req as any).userUnidade!;
 
-      // Verificar se produto existe
-      const existingProduct = await prisma.product.findFirst({
-        where: {
-          id,
-          unidade: unidade as any,
-        },
-      });
+      const existing = await prisma.product.findFirst({ where: { id, unidade } });
+      if (!existing) return res.status(404).json({ error: 'Produto não encontrado' });
 
-      if (!existingProduct) {
-        return res.status(404).json({
-          error: 'Produto não encontrado',
-        });
-      }
-
-      // Verificar nome duplicado (se está sendo alterado)
-      if (validatedData.nome && validatedData.nome !== existingProduct.nome) {
+      if (validatedData.nome && validatedData.nome !== existing.nome) {
         const nameExists = await prisma.product.findFirst({
-          where: {
-            nome: validatedData.nome,
-            unidade: unidade as any,
-            id: { not: id },
-          },
+          where: { nome: validatedData.nome, unidade, id: { not: id } },
         });
-
-        if (nameExists) {
-          return res.status(400).json({
-            error: 'Já existe outro produto com este nome',
-          });
-        }
+        if (nameExists) return res.status(400).json({ error: 'Já existe outro produto com este nome' });
       }
 
-      // Verificar código de barras duplicado (se está sendo alterado)
-      if (
-        validatedData.codigoBarras &&
-        validatedData.codigoBarras !== existingProduct.codigoBarras
-      ) {
+      if (validatedData.codigoBarras && validatedData.codigoBarras !== existing.codigoBarras) {
         const barcodeExists = await prisma.product.findFirst({
-          where: {
-            codigoBarras: validatedData.codigoBarras,
-            unidade: unidade as any,
-            id: { not: id },
-          },
+          where: { codigoBarras: validatedData.codigoBarras, unidade, id: { not: id } },
         });
-
-        if (barcodeExists) {
-          return res.status(400).json({
-            error: 'Já existe outro produto com este código de barras',
-          });
-        }
+        if (barcodeExists) return res.status(400).json({ error: 'Já existe outro produto com este código de barras' });
       }
 
-      const updatedProduct = await prisma.product.update({
-        where: { id },
-        data: validatedData,
-      });
-
-      res.json({
-        message: 'Produto atualizado com sucesso',
-        product: updatedProduct,
-      });
+      const updated = await prisma.product.update({ where: { id }, data: validatedData });
+      res.json({ message: 'Produto atualizado com sucesso', product: updated });
     } catch (error) {
-      return ErrorHandler.handleError(
-        error,
-        res,
-        'ProductController.update',
-        'Erro ao atualizar produto'
-      );
+      return ErrorHandler.handleError(error, res, 'ProductController.update', 'Erro ao atualizar produto');
     }
   }
 
-  // Ativar/Desativar produto
+  // Ativar / Desativar
   async toggleStatus(req: Request, res: Response) {
     try {
       const { id } = req.params;
       const unidade = (req as any).userUnidade!;
+      const product = await prisma.product.findFirst({ where: { id, unidade } });
 
-      const product = await prisma.product.findFirst({
-        where: {
-          id,
-          unidade: unidade as any,
-        },
-      });
+      if (!product) return res.status(404).json({ error: 'Produto não encontrado' });
 
-      if (!product) {
-        return res.status(404).json({
-          error: 'Produto não encontrado',
-        });
-      }
-
-      const newStatus = !product.ativo;
-
-      const updatedProduct = await prisma.product.update({
+      const updated = await prisma.product.update({
         where: { id },
-        data: { ativo: newStatus },
+        data: { ativo: !product.ativo },
       });
 
       res.json({
-        message: `Produto ${newStatus ? 'ativado' : 'desativado'} com sucesso`,
-        product: updatedProduct,
+        message: `Produto ${updated.ativo ? 'ativado' : 'desativado'} com sucesso`,
+        product: updated,
       });
     } catch (error) {
-      return ErrorHandler.handleError(
-        error,
-        res,
-        'ProductController.toggleStatus',
-        'Erro ao alterar status do produto'
-      );
+      return ErrorHandler.handleError(error, res, 'ProductController.toggleStatus', 'Erro ao alterar status');
     }
   }
 
@@ -363,95 +234,50 @@ export class ProductController {
   async adjustStock(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      const validatedData = adjustStockSchema.parse(req.body);
       const unidade = (req as any).userUnidade!;
       const userId = (req as any).userId!;
+      const validated = adjustStockSchema.parse(req.body);
 
-      const product = await prisma.product.findFirst({
-        where: {
-          id,
-          unidade: unidade as any,
-        },
-      });
+      const product = await prisma.product.findFirst({ where: { id, unidade } });
+      if (!product) return res.status(404).json({ error: 'Produto não encontrado' });
 
-      if (!product) {
-        return res.status(404).json({
-          error: 'Produto não encontrado',
-        });
-      }
+      const novoEstoque = product.estoqueAtual + validated.quantidade;
+      if (novoEstoque < 0)
+        return res.status(400).json({ error: 'Estoque não pode ficar negativo', estoqueAtual: product.estoqueAtual });
 
-      const novoEstoque = product.estoqueAtual + validatedData.quantidade;
-
-      if (novoEstoque < 0) {
-        return res.status(400).json({
-          error: 'Estoque não pode ficar negativo',
-          estoqueAtual: product.estoqueAtual,
-          tentativaAjuste: validatedData.quantidade,
-        });
-      }
-
-      // Transação para atualizar estoque e criar movimentação
       const result = await prisma.$transaction(async (tx) => {
-        // Atualizar estoque do produto
-        const updatedProduct = await tx.product.update({
+        const updated = await tx.product.update({
           where: { id },
           data: { estoqueAtual: novoEstoque },
         });
 
-        // Criar movimentação
         const movement = await tx.stockMovement.create({
           data: {
             productId: id,
-            tipo: validatedData.quantidade > 0 ? 'ENTRADA' : 'SAIDA',
-            quantidade: Math.abs(validatedData.quantidade),
-            motivo: validatedData.motivo,
-            observacoes: validatedData.observacoes,
+            tipo: validated.quantidade > 0 ? 'ENTRADA' : 'SAIDA',
+            quantidade: Math.abs(validated.quantidade),
+            motivo: validated.motivo,
+            observacoes: validated.observacoes,
             criadoPorId: userId,
-            unidade: unidade as any,
+            unidade,
           },
         });
 
-        return { product: updatedProduct, movement };
+        return { updated, movement };
       });
 
-      res.json({
-        message: 'Estoque ajustado com sucesso',
-        product: result.product,
-        movement: result.movement,
-      });
+      res.json({ message: 'Estoque ajustado com sucesso', product: result.updated, movement: result.movement });
     } catch (error) {
-      return ErrorHandler.handleError(
-        error,
-        res,
-        'ProductController.adjustStock',
-        'Erro ao ajustar estoque'
-      );
+      return ErrorHandler.handleError(error, res, 'ProductController.adjustStock', 'Erro ao ajustar estoque');
     }
   }
 
-  // Listar produtos com estoque baixo
+  // Produtos com estoque baixo
   async getLowStock(req: Request, res: Response) {
     try {
       const unidade = (req as any).userUnidade!;
-
-      const products = await prisma.product.findMany({
-        where: {
-          unidade: unidade as any,
-          ativo: true,
-          estoqueAtual: {
-            lte: prisma.product.fields.estoqueMinimo,
-          },
-        },
-        orderBy: [{ estoqueAtual: 'asc' }, { nome: 'asc' }],
-        select: {
-          id: true,
-          nome: true,
-          categoria: true,
-          estoqueAtual: true,
-          estoqueMinimo: true,
-          localizacao: true,
-        },
-      });
+      const all = await prisma.product.findMany({ where: { unidade, ativo: true } });
+      const products = all.filter((p) => p.estoqueAtual <= p.estoqueMinimo);
 
       res.json({
         products,
@@ -459,47 +285,24 @@ export class ProductController {
         message: `${products.length} produto(s) com estoque baixo`,
       });
     } catch (error) {
-      return ErrorHandler.handleError(
-        error,
-        res,
-        'ProductController.getLowStock',
-        'Erro ao buscar produtos com estoque baixo'
-      );
+      return ErrorHandler.handleError(error, res, 'ProductController.getLowStock', 'Erro ao buscar produtos com estoque baixo');
     }
   }
 
-  // Listar categorias de produtos
+  // Listar categorias
   async getCategories(req: Request, res: Response) {
     try {
       const unidade = (req as any).userUnidade!;
-
       const categories = await prisma.product.findMany({
-        where: {
-          unidade: unidade as any,
-          ativo: true,
-        },
-        select: {
-          categoria: true,
-        },
+        where: { unidade, ativo: true },
+        select: { categoria: true },
         distinct: ['categoria'],
       });
 
-      const categoryList = categories
-        .map((item) => item.categoria)
-        .filter((cat) => cat !== null)
-        .sort();
-
-      res.json({
-        categories: categoryList,
-        total: categoryList.length,
-      });
+      const list = categories.map((c) => c.categoria).filter(Boolean).sort();
+      res.json({ categories: list, total: list.length });
     } catch (error) {
-      return ErrorHandler.handleError(
-        error,
-        res,
-        'ProductController.getCategories',
-        'Erro ao buscar categorias'
-      );
+      return ErrorHandler.handleError(error, res, 'ProductController.getCategories', 'Erro ao buscar categorias');
     }
   }
 }

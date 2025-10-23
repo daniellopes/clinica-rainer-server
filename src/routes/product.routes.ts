@@ -11,6 +11,7 @@ import {
   updateProductSchema,
   getProductByIdSchema,
   adjustStockSchema,
+  getProductByBarcodeSchema,
 } from '../schemas/product.schema';
 
 const router = Router();
@@ -51,5 +52,11 @@ router.post(
 
 // Rota por código de barras
 router.get('/barcode/:codigoBarras', productController.getByBarcode);
+
+router.get(
+  '/barcode/:codigoBarras',
+  validateParamsZod(getProductByBarcodeSchema),
+  productController.getByBarcode
+);
 
 export default router;
