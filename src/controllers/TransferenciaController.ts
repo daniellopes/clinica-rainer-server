@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Unidade } from "@prisma/client";
 import { z } from "zod";
 import { createTransferenciaSchema } from "../schemas/transferencia.schema";
 import { ErrorHandler } from "../utils/errorHandler";
@@ -9,7 +9,7 @@ const prisma = new PrismaClient();
 export class TransferenciaController {
   async list(req: Request, res: Response) {
     try {
-      const unidade = req.userUnidade;
+      const unidade = req.userUnidade as Unidade;
 
       const transferencias = await prisma.transferencia.findMany({
         where: { unidade },
@@ -25,7 +25,7 @@ export class TransferenciaController {
   async create(req: Request, res: Response) {
     try {
       const validated = createTransferenciaSchema.parse(req.body);
-      const unidade = req.userUnidade;
+      const unidade = req.userUnidade as Unidade;
 
       // 🔹 Validar se pacientes existem
       const pacienteOrigem = await prisma.patient.findUnique({
@@ -76,7 +76,7 @@ export class TransferenciaController {
           pacienteDestino: validated.pacienteDestino,
           valor: validated.valor,
           observacoes: validated.observacoes,
-          unidade,
+          unidade, // ✅ enum Unidade
         },
       });
 

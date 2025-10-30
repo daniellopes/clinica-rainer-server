@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Unidade } from '@prisma/client';
 import { authMiddleware } from '../middlewares/authMiddleware';
 import { checkUnidadeMiddleware } from '../middlewares/checkUnidadeMiddleware';
 import { auditMiddleware } from '../middlewares/auditMiddleware';
@@ -10,14 +10,16 @@ const prisma = new PrismaClient();
 router.use(authMiddleware);
 router.use(checkUnidadeMiddleware);
 
-// 📋 Listar todas as transferências
+// 📋 Listar transferências
 router.get('/', auditMiddleware('LIST', 'TRANSFERENCIA'), async (req, res) => {
   try {
-    const unidade = req.userUnidade;
+    const unidade = req.userUnidade as Unidade;
+
     const transferencias = await prisma.transferencia.findMany({
       where: { unidade },
       orderBy: { dataTransferencia: 'desc' },
     });
+
     res.json(transferencias);
   } catch (error) {
     console.error('Erro ao listar transferências:', error);
@@ -29,7 +31,7 @@ router.get('/', auditMiddleware('LIST', 'TRANSFERENCIA'), async (req, res) => {
 router.post('/', auditMiddleware('CREATE', 'TRANSFERENCIA'), async (req, res) => {
   try {
     const { pacienteOrigemId, pacienteDestinoId, pacienteOrigem, pacienteDestino, valor, observacoes } = req.body;
-    const unidade = req.userUnidade;
+    const unidade = req.userUnidade as Unidade;
 
     if (!pacienteOrigemId || !pacienteDestinoId) {
       return res.status(400).json({ error: 'Pacientes origem e destino são obrigatórios' });
@@ -39,7 +41,7 @@ router.post('/', auditMiddleware('CREATE', 'TRANSFERENCIA'), async (req, res) =>
       return res.status(400).json({ error: 'Origem e destino devem ser diferentes' });
     }
 
-    // 🔢 Gerar número sequencial (ex: TRF-2025-001)
+    // 🔢 Gerar número sequencial
     const count = await prisma.transferencia.count();
     const numero = `TRF-${new Date().getFullYear()}-${String(count + 1).padStart(3, '0')}`;
 
@@ -57,7 +59,7 @@ router.post('/', auditMiddleware('CREATE', 'TRANSFERENCIA'), async (req, res) =>
       },
     });
 
-    // 🔄 Registrar a movimentação financeira
+    // 🔄 Registrar transações financeiras
     await prisma.$transaction([
       prisma.transaction.create({
         data: {
@@ -92,10 +94,10 @@ router.post('/', auditMiddleware('CREATE', 'TRANSFERENCIA'), async (req, res) =>
   }
 });
 
-// 📊 Endpoint de saldos de pacientes
+// 📊 Endpoint de saldos
 router.get('/saldos', auditMiddleware('LIST', 'TRANSFERENCIA'), async (req, res) => {
   try {
-    const unidade = req.userUnidade;
+    const unidade = req.userUnidade as Unidade;
 
     const pacientes = await prisma.patient.findMany({
       where: { unidade },
@@ -113,7 +115,10 @@ router.get('/saldos', auditMiddleware('LIST', 'TRANSFERENCIA'), async (req, res)
           _sum: { valor: true },
         });
 
-        const saldo = Number(receitas._sum.valor || 0) - Number(despesas._sum.valor || 0);
+        const receitaTotal = Number(receitas._sum?.valor || 0);
+        const despesaTotal = Number(despesas._sum?.valor || 0);
+        const saldo = receitaTotal - despesaTotal;
+
         return { id: p.id, nome: p.nome, saldo };
       })
     );

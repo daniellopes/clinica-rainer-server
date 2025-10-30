@@ -7,65 +7,83 @@ const prisma = new PrismaClient();
 
 router.use(authMiddleware);
 
-// Listar procedimentos executados (não pagos)
+// 📋 Listar procedimentos (somente ativos)
 router.get('/procedimentos', async (req, res) => {
-  const unidade = req.userUnidade as Unidade; // Ensure unidade is of the correct enum type
+  try {
+    const unidade = req.userUnidade as Unidade;
 
-  const procedimentos = await prisma.procedure.findMany({
-    where: { unidade },
-    include: { patient: true },
-  });
+    // Procedure não tem relação com Patient, então não incluir 'patient'
+    const procedimentos = await prisma.procedure.findMany({
+      where: { unidade, ativo: true },
+      orderBy: { createdAt: 'desc' },
+    });
 
-  res.json(procedimentos);
+    res.json(procedimentos);
+  } catch (error) {
+    console.error('Erro ao listar procedimentos:', error);
+    res.status(500).json({ error: 'Erro ao listar procedimentos' });
+  }
 });
 
-// Registrar pagamento
+// 💰 Registrar pagamento
 router.post('/', async (req, res) => {
-  const { procedureId, formasPagamento, observacoes } = req.body;
-  const unidade = req.userUnidade;
+  try {
+    const { procedureId, patientId, formasPagamento, observacoes } = req.body;
+    const unidade = req.userUnidade as Unidade;
 
-  const procedimento = await prisma.procedure.findUnique({ where: { id: procedureId } });
-  if (!procedimento) return res.status(404).json({ error: 'Procedimento não encontrado' });
+    const procedimento = await prisma.procedure.findUnique({
+      where: { id: procedureId },
+    });
 
-  const totalPago = formasPagamento.reduce((sum, fp) => sum + Number(fp.valor), 0);
-  const saldoRestante = procedimento.valor - totalPago;
+    if (!procedimento) {
+      return res.status(404).json({ error: 'Procedimento não encontrado' });
+    }
 
-  // 1️⃣ Cria o registro de pagamento
-  const pagamento = await prisma.payment.create({
-    data: {
-      procedureId,
-      patientId: procedimento.patientId,
-      valorTotal: totalPago,
-      formasPagamento,
-      metodoResumo: formasPagamento.map((f: any) => `${f.metodo}: ${f.valor}`).join(', '),
-      observacoes,
-      unidade,
-    },
-  });
+    const valorProcedimento = procedimento.valor ?? 0;
 
-  // 2️⃣ Atualiza status do procedimento
-  await prisma.procedure.update({
-    where: { id: procedureId },
-    data: { status: 'PAGO' },
-  });
+    const totalPago = formasPagamento.reduce(
+      (sum: number, fp: { valor: number }) => sum + Number(fp.valor || 0),
+      0
+    );
 
-  // 3️⃣ Se sobrar saldo, lança em transactions
-  if (saldoRestante > 0) {
-    await prisma.transaction.create({
+    const saldoRestante = valorProcedimento - totalPago;
+
+    // ✅ Cria o pagamento
+    const pagamento = await prisma.payment.create({
       data: {
-        patientId: procedimento.patientId,
-        descricao: `Crédito residual de pagamento parcial do procedimento ${procedimento.nome}`,
-        tipo: 'RECEITA',
-        valor: saldoRestante,
-        dataVencimento: new Date(),
-        status: 'PAGO',
-        criadoPorId: req.userId,
+        procedureId,
+        patientId,
+        valorTotal: totalPago,
+        formasPagamento,
+        metodoResumo: formasPagamento
+          .map((f: any) => `${f.metodo}: ${f.valor}`)
+          .join(', '),
+        observacoes,
         unidade,
       },
     });
-  }
 
-  res.json({ pagamento, saldoRestante });
+    // ⚙️ Se sobrar saldo, lança uma transação
+    if (saldoRestante > 0) {
+      await prisma.transaction.create({
+        data: {
+          patientId,
+          descricao: `Crédito residual de pagamento parcial do procedimento ${procedimento.nome}`,
+          tipo: 'RECEITA',
+          valor: saldoRestante,
+          dataVencimento: new Date(),
+          status: 'PAGO',
+          criadoPorId: req.userId,
+          unidade,
+        },
+      });
+    }
+
+    res.json({ pagamento, saldoRestante });
+  } catch (error) {
+    console.error('Erro ao registrar pagamento:', error);
+    res.status(500).json({ error: 'Erro ao registrar pagamento' });
+  }
 });
 
 export default router;
