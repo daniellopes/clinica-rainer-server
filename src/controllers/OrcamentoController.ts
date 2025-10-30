@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { OrcamentoStatus, PrismaClient } from '@prisma/client';
 import { createOrcamentoSchema } from '../schemas/orcamento.schema';
 import { z } from 'zod';
 import { ErrorHandler } from '../utils/errorHandler';
@@ -107,15 +107,21 @@ export class OrcamentoController {
             const { id } = req.params;
             const data = req.body;
 
-            // 🔹 Normaliza o status para minúsculas
-            const status = data.status ? data.status.toLowerCase() : 'pendente';
+            // 🔹 Converte status recebido em enum válido do Prisma
+            let status: OrcamentoStatus = OrcamentoStatus.PENDENTE;
+            if (data.status) {
+                const normalized = data.status.toString().trim().toUpperCase();
+                if (Object.values(OrcamentoStatus).includes(normalized as OrcamentoStatus)) {
+                    status = normalized as OrcamentoStatus;
+                }
+            }
 
-            // 🔹 Recalcula o total de forma segura
+            // 🔹 Recalcula valor total
             const valorTotal = Array.isArray(data.itens)
-                ? data.itens.reduce((sum: number, i: any) => sum + Number(i.valorTotal || 0), 0)
+                ? data.itens.reduce((sum: number, item: any) => sum + Number(item.valorTotal || 0), 0)
                 : 0;
 
-            // 🔹 Atualiza orçamento e substitui itens
+            // 🔹 Atualiza o orçamento
             const atualizado = await prisma.orcamento.update({
                 where: { id },
                 data: {
@@ -123,32 +129,32 @@ export class OrcamentoController {
                     paciente: data.paciente,
                     observacoes: data.observacoes,
                     valorTotal,
-                    status, // ✅ minúsculo e válido
+                    status, // ✅ agora explicitamente enum
                     itens: {
-                        deleteMany: {}, // remove os antigos
-                        create: data.itens?.map((item: any) => ({
+                        deleteMany: {}, // remove antigos
+                        create: data.itens.map((item: any) => ({
                             tipo: item.tipo,
                             itemId: item.itemId,
                             itemNome: item.itemNome,
                             quantidade: item.quantidade,
                             valorUnitario: item.valorUnitario,
                             valorTotal: item.valorTotal,
-                        })) || [],
+                        })),
                     },
                 },
                 include: { itens: true },
             });
 
             return res.json({
-                message: "Orçamento atualizado e persistido com sucesso",
+                message: 'Orçamento atualizado com sucesso',
                 orcamento: atualizado,
             });
         } catch (error) {
             return ErrorHandler.handleError(
                 error,
                 res,
-                "OrcamentoController.update",
-                "Erro ao atualizar orçamento"
+                'OrcamentoController.update',
+                'Erro ao atualizar orçamento'
             );
         }
     }
