@@ -107,12 +107,15 @@ export class OrcamentoController {
             const { id } = req.params;
             const data = req.body;
 
-            // Recalcula o valor total, garantindo consistência
-            const valorTotal = data.itens?.reduce(
-                (sum: number, item: any) => sum + (item.valorTotal || 0),
-                0
-            ) ?? 0;
+            // 🔹 Normaliza o status para minúsculas
+            const status = data.status ? data.status.toLowerCase() : 'pendente';
 
+            // 🔹 Recalcula o total de forma segura
+            const valorTotal = Array.isArray(data.itens)
+                ? data.itens.reduce((sum: number, i: any) => sum + Number(i.valorTotal || 0), 0)
+                : 0;
+
+            // 🔹 Atualiza orçamento e substitui itens
             const atualizado = await prisma.orcamento.update({
                 where: { id },
                 data: {
@@ -120,26 +123,35 @@ export class OrcamentoController {
                     paciente: data.paciente,
                     observacoes: data.observacoes,
                     valorTotal,
-                    status: data.status?.toUpperCase() || "PENDENTE",
+                    status, // ✅ minúsculo e válido
                     itens: {
-                        deleteMany: {}, // remove os itens antigos
-                        create: data.itens.map((item: any) => ({
+                        deleteMany: {}, // remove os antigos
+                        create: data.itens?.map((item: any) => ({
                             tipo: item.tipo,
                             itemId: item.itemId,
                             itemNome: item.itemNome,
                             quantidade: item.quantidade,
                             valorUnitario: item.valorUnitario,
                             valorTotal: item.valorTotal,
-                        })),
+                        })) || [],
                     },
                 },
                 include: { itens: true },
             });
 
-            return res.json({ message: "Orçamento atualizado com sucesso", orcamento: atualizado });
+            return res.json({
+                message: "Orçamento atualizado e persistido com sucesso",
+                orcamento: atualizado,
+            });
         } catch (error) {
-            return ErrorHandler.handleError(error, res, "OrcamentoController.update", "Erro ao atualizar orçamento");
+            return ErrorHandler.handleError(
+                error,
+                res,
+                "OrcamentoController.update",
+                "Erro ao atualizar orçamento"
+            );
         }
     }
+
 
 }
