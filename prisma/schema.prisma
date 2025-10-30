@@ -512,6 +512,23 @@ model OrcamentoItem {
   orcamento     Orcamento @relation(fields: [orcamentoId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 }
 
+model Transferencia {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  numero            String    @unique @db.VarChar(255)
+  pacienteOrigemId  String    @db.Uuid
+  pacienteDestinoId String    @db.Uuid
+  pacienteOrigem    String    @db.VarChar(255)
+  pacienteDestino   String    @db.VarChar(255)
+  valor             Decimal   @db.Decimal(10, 2)
+  dataTransferencia DateTime? @default(now()) @db.Timestamp(6)
+  observacoes       String?
+  unidade           String
+  createdAt         DateTime? @default(now()) @db.Timestamp(6)
+  updatedAt         DateTime? @default(now()) @updatedAt @db.Timestamp(6)
+
+  @@map("transferencias")
+}
+
 enum RepasseStatus {
   PENDENTE
   PAGO
@@ -664,4 +681,21 @@ enum OrcamentoStatus {
   PENDENTE
   CONFIRMADO
   CANCELADO
+}
+
+model Payment {
+  id              String           @id @default(uuid())
+  procedureId     String
+  patientId       String
+  valorTotal      Decimal          @db.Decimal(10,2)
+  formasPagamento Json
+  metodoResumo    String?
+  dataPagamento   DateTime         @default(now())
+  observacoes     String?
+  unidade         Unidade
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  procedure Procedure @relation(fields: [procedureId], references: [id])
+  patient   Patient   @relation(fields: [patientId], references: [id])
 }

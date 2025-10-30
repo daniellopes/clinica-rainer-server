@@ -13,6 +13,8 @@ import consultationRoutes from './consultation.routes';
 import planoTerapeuticoRoutes from './planoTerapeuticoRoutes';
 import repasseRoutes from './repasse.routes';
 import orcamentoRoutes from './orcamentoRoutes';
+import transferenciaRoutes from "./transferencia.routes";
+import pagamentosRoutes from './pagamentos.routes';
 
 const router = Router();
 
@@ -30,5 +32,7 @@ router.use('/consultations', consultationRoutes);
 router.use('/plano-terapeutico', planoTerapeuticoRoutes);
 router.use('/repasses', repasseRoutes);
 router.use('/orcamentos', orcamentoRoutes);
+router.use("/transferencias", transferenciaRoutes);
+router.use('/pagamentos', pagamentosRoutes);
 
 export default router;
