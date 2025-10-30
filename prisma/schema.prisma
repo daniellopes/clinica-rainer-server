@@ -152,8 +152,6 @@ model Patient {
   parentes                  PatientRelative[]
   transacoes                Transaction[]
 
-  payments Payment[] @relation("PatientPayments")
-
   @@map("patients")
 }
 
@@ -277,8 +275,6 @@ model Procedure {
   updatedAt      DateTime       @updatedAt
   agendamentos   Appointment[]
   consultas      Consultation[]
-
-  payments Payment[] @relation("ProcedurePayments")
 
   @@index([unidade, ativo])
   @@map("procedures")
@@ -533,6 +529,22 @@ model Transferencia {
   @@map("transferencias")
 }
 
+model Payment {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  procedureId     String?   @db.Uuid
+  valorTotal      Float
+  metodoResumo    String?
+  formasPagamento Json
+  observacoes     String?
+  unidade         String
+  createdAt       DateTime? @default(now()) @db.Timestamp(6)
+  updatedAt       DateTime? @default(now()) @updatedAt @db.Timestamp(6)
+  dataPagamento   DateTime? @default(now()) @db.Timestamp(6)
+  patientId       String?
+
+  @@index([procedureId], map: "idx_payment_procedure")
+}
+
 enum RepasseStatus {
   PENDENTE
   PAGO
@@ -685,21 +697,4 @@ enum OrcamentoStatus {
   PENDENTE
   CONFIRMADO
   CANCELADO
-}
-
-model Payment {
-  id              String   @id @default(uuid())
-  procedureId     String
-  patientId       String
-  valorTotal      Decimal  @db.Decimal(10, 2)
-  formasPagamento Json
-  metodoResumo    String?
-  dataPagamento   DateTime @default(now())
-  observacoes     String?
-  unidade         Unidade
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  procedure Procedure @relation("ProcedurePayments", fields: [procedureId], references: [id])
-  patient   Patient   @relation("PatientPayments", fields: [patientId], references: [id])
 }
