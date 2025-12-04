@@ -14,11 +14,57 @@ dotenv.config();
 
 const app = express();
 
-app.use(apiRateLimit as RequestHandler);
-
 app.set('trust proxy', 1);
 
-// Helmet (segurança)
+// Configuração de CORS - DEVE SER O PRIMEIRO MIDDLEWARE
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
+  process.env.FRONTEND_URL,
+  'https://clinica-rainer-frontend.vercel.app',
+].filter(Boolean) as string[];
+
+const corsOptions = {
+  origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+    // Permitir requisições sem origin (mobile apps, Postman, etc)
+    if (!origin) {
+      return callback(null, true);
+    }
+
+    // Verificar se a origin está na lista permitida
+    if (allowedOrigins.includes(origin)) {
+      if (process.env.NODE_ENV !== 'production') {
+        console.log(`✅ CORS permitido para origin: ${origin}`);
+      }
+      callback(null, true);
+    } else {
+      console.warn(`⚠️ CORS bloqueado para origin: ${origin}`);
+      console.log(`📋 Origens permitidas: ${allowedOrigins.join(', ')}`);
+      // Em desenvolvimento, permitir mesmo assim para facilitar debugging
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔧 Modo desenvolvimento: permitindo origin mesmo não estando na lista');
+        callback(null, true);
+      } else {
+        callback(new Error(`CORS bloqueado para origin: ${origin}`));
+      }
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-unidade', 'X-Requested-With'],
+  exposedHeaders: ['Content-Range', 'X-Content-Range'],
+  maxAge: 86400, // 24 horas
+  preflightContinue: false,
+  optionsSuccessStatus: 204,
+};
+
+// Aplicar CORS antes de qualquer outro middleware
+app.use(cors(corsOptions));
+
+// Tratar requisições preflight explicitamente
+app.options('*', cors(corsOptions));
+
+// Helmet (segurança) - ajustado para não interferir com CORS
 app.use(
   helmet({
     contentSecurityPolicy: {
@@ -29,32 +75,12 @@ app.use(
         imgSrc: ["'self'", 'data:', 'https:'],
       },
     },
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
   }),
 );
 
-// Configuração de CORS
-const allowedOrigins = [
-  process.env.FRONTEND_URL || 'http://localhost:3000',
-  'https://clinica-rainer-frontend.vercel.app', // produção
-];
-
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error(`CORS bloqueado para origin: ${origin}`));
-      }
-    },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'x-unidade'],
-  }),
-);
-
-// Garantir resposta para preflight (OPTIONS)
-app.options('*', cors());
+// Rate limiting - após CORS
+app.use(apiRateLimit as RequestHandler);
 
 app.use(compression());
 app.use(express.json({ limit: '10mb' }));

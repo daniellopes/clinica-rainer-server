@@ -12,7 +12,8 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "create-admin": "ts-node src/scripts/createAdmin.ts",
-    "setup-permissions": "tsx src/scripts/setupDefaultPermissions.ts"
+    "setup-permissions": "tsx src/scripts/setupDefaultPermissions.ts",
+    "test:db": "ts-node src/scripts/testDatabaseConnection.ts"
   },
   "keywords": [],
   "author": "",
