@@ -43,6 +43,7 @@ model User {
   recipe_templates      RecipeTemplate[]
   movimentacoesEstoque  StockMovement[]      @relation("MovimentacaoCriadaPor")
   transacoesFinanceiras Transaction[]        @relation("TransacaoCriadaPor")
+  contasPagar           ContaPagar[]        @relation("ContaPagarCriadaPor")
   permissoes            UserPermission[]
 
   @@map("users")
@@ -543,6 +544,29 @@ model Payment {
   patientId       String?
 
   @@index([procedureId], map: "idx_payment_procedure")
+}
+
+model ContaPagar {
+  id              String           @id @default(uuid())
+  fornecedor      String
+  descricao        String
+  categoria        String?
+  valor            Decimal          @db.Decimal(10, 2)
+  dataVencimento   DateTime
+  dataPagamento    DateTime?
+  status           StatusFinanceiro @default(PENDENTE)
+  formaPagamento   String?
+  observacoes      String?
+  numeroNota       String?
+  unidade          Unidade
+  criadoPorId      String
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  criadoPor        User             @relation("ContaPagarCriadaPor", fields: [criadoPorId], references: [id])
+
+  @@index([unidade, status])
+  @@index([dataVencimento])
+  @@map("contas_pagar")
 }
 
 enum RepasseStatus {

@@ -25,22 +25,55 @@ const updateAppointmentSchema = z.object({
   patientId: z.string().uuid().optional(),
   procedureId: z.string().uuid().optional(),
   medicoId: z.string().uuid().optional(),
-  dataHora: z.string().datetime().optional(),
+  dataHora: z
+    .any()
+    .optional()
+    .transform((val) => {
+      if (!val) return undefined;
+      if (val instanceof Date) return val.toISOString();
+      if (typeof val === 'string') {
+        const date = new Date(val);
+        if (!isNaN(date.getTime())) {
+          return date.toISOString();
+        }
+      }
+      return val;
+    }),
   duracao: z.number().int().positive().optional(),
   observacoes: z.string().optional(),
   tipoAgendamento: z.string().optional(),
   status: z
-    .enum([
-      'AGENDADO',
-      'CONFIRMADO',
-      'EM_ATENDIMENTO',
-      'CONCLUIDO',
-      'CANCELADO',
-      'FALTOU',
-    ])
-    .optional(),
+    .string()
+    .optional()
+    .transform((val) => {
+      // Mapear status do frontend para status do backend
+      if (!val) return undefined;
+      const statusMap: { [key: string]: string } = {
+        executado: 'CONCLUIDO',
+        executado_nao_pago: 'CONCLUIDO',
+        pendente: 'AGENDADO',
+        FINALIZADO: 'CONCLUIDO',
+      };
+      // Se já estiver no formato correto do backend, retornar como está
+      const backendStatuses = [
+        'AGENDADO',
+        'CONFIRMADO',
+        'EM_ATENDIMENTO',
+        'CONCLUIDO',
+        'CANCELADO',
+        'FALTOU',
+      ];
+      if (backendStatuses.includes(val)) {
+        return val;
+      }
+      // Caso contrário, tentar mapear - sempre retornar um valor válido
+      const mapped = statusMap[val];
+      return mapped || 'CONCLUIDO'; // Default para CONCLUIDO se não encontrar
+    }),
   motivoCancelamento: z.string().optional(),
   confirmado: z.boolean().optional(),
+  executado: z.boolean().optional(), // Campo enviado pelo frontend
+  executadoNaoPago: z.boolean().optional(), // Campo enviado pelo frontend
 });
 
 const listAppointmentsSchema = z.object({
@@ -54,15 +87,29 @@ const listAppointmentsSchema = z.object({
     .default('10'),
   search: z.string().optional(),
   status: z
-    .enum([
-      'AGENDADO',
-      'CONFIRMADO',
-      'EM_ATENDIMENTO',
-      'CONCLUIDO',
-      'CANCELADO',
-      'FALTOU',
+    .union([
+      z.enum([
+        'AGENDADO',
+        'CONFIRMADO',
+        'EM_ATENDIMENTO',
+        'CONCLUIDO',
+        'CANCELADO',
+        'FALTOU',
+      ]),
+      z.enum(['executado', 'pendente', 'executado_nao_pago']),
     ])
-    .optional(),
+    .optional()
+    .transform((val) => {
+      // Mapear status do frontend para status do backend
+      if (!val) return undefined;
+      const statusMap: { [key: string]: string } = {
+        executado: 'CONCLUIDO',
+        executado_nao_pago: 'CONCLUIDO',
+        pendente: 'AGENDADO',
+      };
+      return statusMap[val] || val;
+    }),
+  tipo: z.enum(['consulta', 'procedimento']).optional(), // Novo filtro: consulta ou procedimento
   medicoId: z.string().uuid().optional(),
   patientId: z.string().uuid().optional(),
   dataInicio: z.string().datetime().optional(),
@@ -83,6 +130,7 @@ export class AppointmentController {
         limit,
         search,
         status,
+        tipo,
         medicoId,
         patientId,
         dataInicio,
@@ -97,8 +145,29 @@ export class AppointmentController {
         unidade: userUnidade,
       };
 
+      // Construir filtro de procedimento baseado no tipo
+      let categoriaFilter: any = null;
+
+      if (tipo) {
+        if (tipo === 'consulta') {
+          // Filtrar apenas procedimentos com categoria "Consulta"
+          categoriaFilter = {
+            equals: 'Consulta',
+            mode: 'insensitive',
+          };
+        } else if (tipo === 'procedimento') {
+          // Filtrar procedimentos que NÃO são consultas
+          categoriaFilter = {
+            not: {
+              equals: 'Consulta',
+              mode: 'insensitive',
+            },
+          };
+        }
+      }
+
       if (search) {
-        where.OR = [
+        const searchConditions: any[] = [
           {
             patient: {
               OR: [
@@ -108,15 +177,58 @@ export class AppointmentController {
               ],
             },
           },
-          {
-            procedure: {
-              nome: { contains: search, mode: 'insensitive' },
-            },
-          },
         ];
+
+        // Adicionar filtro de nome do procedimento com categoria se necessário
+        const procedureSearchFilter: any = {
+          nome: { contains: search, mode: 'insensitive' },
+        };
+
+        if (categoriaFilter) {
+          procedureSearchFilter.categoria = categoriaFilter;
+        }
+
+        searchConditions.push({
+          procedure: procedureSearchFilter,
+        });
+
+        where.OR = searchConditions;
+      } else if (categoriaFilter) {
+        // Se não há busca, mas há filtro de tipo, aplicar diretamente
+        where.procedure = {
+          categoria: categoriaFilter,
+        };
       }
 
-      if (status) {
+      // REGRA: Se está filtrando por tipo (consulta ou procedimento),
+      // apenas mostrar agendamentos confirmados ou posteriores
+      // Agendamentos com status "AGENDADO" não aparecem nessas telas
+      if (tipo) {
+        // Se já há um filtro de status, mesclar com o filtro de tipo
+        if (status) {
+          // Se o status filtrado está na lista de status válidos para tipo, usar
+          // Caso contrário, aplicar o filtro de tipo (confirmado ou posterior)
+          const validStatusForType = [
+            'CONFIRMADO',
+            'EM_ATENDIMENTO',
+            'CONCLUIDO',
+          ];
+          if (validStatusForType.includes(status)) {
+            where.status = status; // Usar o filtro específico se for válido
+          } else {
+            // Se o status não é válido para tipo, aplicar filtro padrão
+            where.status = {
+              in: ['CONFIRMADO', 'EM_ATENDIMENTO', 'CONCLUIDO'],
+            };
+          }
+        } else {
+          // Se não há filtro de status, aplicar filtro padrão para tipo
+          where.status = {
+            in: ['CONFIRMADO', 'EM_ATENDIMENTO', 'CONCLUIDO'],
+          };
+        }
+      } else if (status) {
+        // Se não há filtro de tipo, aplicar filtro de status normalmente
         where.status = status;
       }
 
@@ -178,6 +290,13 @@ export class AppointmentController {
                 nome: true,
               },
             },
+            consulta: {
+              select: {
+                id: true,
+                status: true,
+                dataConsulta: true,
+              },
+            },
           },
           orderBy: {
             [orderBy]: orderDirection,
@@ -190,9 +309,37 @@ export class AppointmentController {
 
       const totalPages = Math.ceil(totalCount / limit);
 
+      // Formatar agendamentos com campos calculados para o frontend
+      const appointmentsWithType = appointments.map((apt) => {
+        const isConsulta =
+          apt.procedure?.categoria?.toLowerCase() === 'consulta';
+
+        // Determinar status no formato do frontend
+        let statusFrontend:
+          | 'executado'
+          | 'pendente'
+          | 'executado_nao_pago'
+          | string = apt.status;
+
+        if (apt.status === 'CONCLUIDO') {
+          // Se tem consulta, está executado e pago
+          // Se não tem consulta, está executado mas não pago
+          statusFrontend = apt.consulta ? 'executado' : 'executado_nao_pago';
+        } else if (apt.status === 'AGENDADO' || apt.status === 'CONFIRMADO') {
+          statusFrontend = 'pendente';
+        }
+
+        return {
+          ...apt,
+          isConsulta,
+          tipo: isConsulta ? 'consulta' : 'procedimento',
+          statusFrontend, // Status formatado para o frontend
+        };
+      });
+
       return res.json({
         success: true,
-        data: appointments,
+        data: appointmentsWithType,
         pagination: {
           page,
           limit,
@@ -207,7 +354,7 @@ export class AppointmentController {
         error,
         res,
         'AppointmentController.list',
-        'Erro ao listar agendamentos'
+        'Erro ao listar agendamentos',
       );
     }
   }
@@ -220,6 +367,33 @@ export class AppointmentController {
 
       if (!id) {
         throw new AppError('ID do agendamento é obrigatório', 400);
+      }
+
+      // Primeiro verificar se existe sem filtro de unidade para diagnóstico
+      const appointmentCheck = await prisma.appointment.findUnique({
+        where: { id },
+        select: {
+          id: true,
+          unidade: true,
+          status: true,
+        },
+      });
+
+      if (!appointmentCheck) {
+        console.log(
+          `[Get Appointment] ❌ Agendamento ${id} não encontrado no banco de dados`,
+        );
+        throw new AppError('Agendamento não encontrado', 404);
+      }
+
+      if (appointmentCheck.unidade !== userUnidade) {
+        console.log(
+          `[Get Appointment] ⚠️ Unidade não corresponde: agendamento está em ${appointmentCheck.unidade}, usuário está em ${userUnidade}`,
+        );
+        throw new AppError(
+          `Agendamento não encontrado na unidade ${userUnidade}. Este agendamento pertence à unidade ${appointmentCheck.unidade}.`,
+          404,
+        );
       }
 
       const appointment = await prisma.appointment.findFirst({
@@ -273,19 +447,47 @@ export class AppointmentController {
       });
 
       if (!appointment) {
+        console.log(
+          `[Get Appointment] ❌ Agendamento ${id} não encontrado após verificação de unidade`,
+        );
         throw new AppError('Agendamento não encontrado', 404);
+      }
+
+      // Formatar resposta com campos calculados para o frontend
+      const isConsulta =
+        appointment.procedure?.categoria?.toLowerCase() === 'consulta';
+      let statusFrontend:
+        | 'executado'
+        | 'pendente'
+        | 'executado_nao_pago'
+        | string = appointment.status;
+
+      if (appointment.status === 'CONCLUIDO') {
+        statusFrontend = appointment.consulta
+          ? 'executado'
+          : 'executado_nao_pago';
+      } else if (
+        appointment.status === 'AGENDADO' ||
+        appointment.status === 'CONFIRMADO'
+      ) {
+        statusFrontend = 'pendente';
       }
 
       return res.json({
         success: true,
-        data: appointment,
+        data: {
+          ...appointment,
+          isConsulta,
+          tipo: isConsulta ? 'consulta' : 'procedimento',
+          statusFrontend,
+        },
       });
     } catch (error: unknown) {
       return ErrorHandler.handleError(
         error,
         res,
         'AppointmentController.getById',
-        'Erro ao buscar agendamento'
+        'Erro ao buscar agendamento',
       );
     }
   }
@@ -431,7 +633,7 @@ export class AppointmentController {
         error,
         res,
         'AppointmentController.create',
-        'Erro ao criar agendamento'
+        'Erro ao criar agendamento',
       );
     }
   }
@@ -440,18 +642,35 @@ export class AppointmentController {
   async update(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      const validatedData = updateAppointmentSchema.parse(req.body);
       const { userUnidade } = req;
+
+      // Validar dados com tratamento de erro melhor
+      let validatedData;
+      try {
+        validatedData = updateAppointmentSchema.parse(req.body);
+      } catch (error: any) {
+        if (error instanceof z.ZodError) {
+          return res.status(400).json({
+            error: 'Dados inválidos',
+            message: 'Erro de validação dos dados',
+            details: error.errors,
+          });
+        }
+        throw error;
+      }
 
       if (!id) {
         throw new AppError('ID do agendamento é obrigatório', 400);
       }
 
-      // Verificar se agendamento existe
+      // Verificar se agendamento existe (incluindo consulta para verificar se está pago)
       const existingAppointment = await prisma.appointment.findFirst({
         where: {
           id,
           unidade: userUnidade as any,
+        },
+        include: {
+          consulta: true,
         },
       });
 
@@ -459,13 +678,8 @@ export class AppointmentController {
         throw new AppError('Agendamento não encontrado', 404);
       }
 
-      // Verificar se pode ser alterado
-      if (existingAppointment.status === 'CONCLUIDO') {
-        throw new AppError(
-          'Não é possível alterar agendamento já concluído',
-          400,
-        );
-      }
+      // Permitir atualizar appointments concluídos (para ajustar detalhes da execução)
+      // A validação de status já foi feita no schema
 
       // Validações adicionais se estiver alterando dados críticos
       if (
@@ -501,25 +715,38 @@ export class AppointmentController {
         }
       }
 
+      // Construir objeto de atualização apenas com campos fornecidos
+      const updateData: any = {};
+
+      if (validatedData.patientId !== undefined)
+        updateData.patientId = validatedData.patientId;
+      if (validatedData.procedureId !== undefined)
+        updateData.procedureId = validatedData.procedureId;
+      if (validatedData.medicoId !== undefined)
+        updateData.medicoId = validatedData.medicoId;
+      if (validatedData.dataHora)
+        updateData.dataHora = new Date(validatedData.dataHora);
+      if (validatedData.duracao !== undefined)
+        updateData.duracao = validatedData.duracao;
+      if (validatedData.observacoes !== undefined)
+        updateData.observacoes = validatedData.observacoes;
+      if (validatedData.tipoAgendamento !== undefined)
+        updateData.tipoAgendamento = validatedData.tipoAgendamento;
+      if (validatedData.status)
+        updateData.status = validatedData.status as StatusAgendamento;
+      if (validatedData.motivoCancelamento !== undefined)
+        updateData.motivoCancelamento = validatedData.motivoCancelamento;
+      if (validatedData.confirmado !== undefined) {
+        updateData.confirmado = validatedData.confirmado;
+        if (validatedData.confirmado) {
+          updateData.dataConfirmacao = new Date();
+        }
+      }
+
       // Atualizar agendamento
       const updatedAppointment = await prisma.appointment.update({
         where: { id },
-        data: {
-          patientId: validatedData.patientId,
-          procedureId: validatedData.procedureId,
-          medicoId: validatedData.medicoId,
-          dataHora: validatedData.dataHora
-            ? new Date(validatedData.dataHora)
-            : undefined,
-          duracao: validatedData.duracao,
-          observacoes: validatedData.observacoes,
-          tipoAgendamento: validatedData.tipoAgendamento,
-          status: validatedData.status,
-          motivoCancelamento: validatedData.motivoCancelamento,
-          confirmado: validatedData.confirmado,
-          dataConfirmacao: validatedData.confirmado ? new Date() : undefined,
-          updatedAt: new Date(),
-        },
+        data: updateData,
         include: {
           patient: {
             select: {
@@ -535,6 +762,7 @@ export class AppointmentController {
               nome: true,
               valor: true,
               duracao: true,
+              categoria: true,
             },
           },
           medico: {
@@ -544,20 +772,159 @@ export class AppointmentController {
               especialidade: true,
             },
           },
+          consulta: {
+            select: {
+              id: true,
+              status: true,
+              dataConsulta: true,
+            },
+          },
         },
       });
+
+      // Processar criação/remoção de Consultation baseado em executado/executadoNaoPago
+      // Se executado = true, criar Consultation (marcar como pago)
+      // Se executadoNaoPago = true, garantir que NÃO tem Consultation (não pago)
+      const hasConsultation = !!existingAppointment.consulta;
+      const hasExecutadoFields =
+        validatedData.executado !== undefined ||
+        validatedData.executadoNaoPago !== undefined;
+      const isMarkingConcluido =
+        validatedData.status === 'CONCLUIDO' ||
+        updateData.status === 'CONCLUIDO';
+      const isAlreadyConcluido = existingAppointment.status === 'CONCLUIDO';
+
+      // Processar se:
+      // 1. Os campos executado/executadoNaoPago foram enviados (sempre processar nesse caso)
+      // 2. Está marcando como concluído pela primeira vez
+      if (hasExecutadoFields || (isMarkingConcluido && !isAlreadyConcluido)) {
+        let shouldHaveConsultation: boolean | null = null;
+
+        if (hasExecutadoFields) {
+          // Se os campos foram enviados explicitamente, seguir os valores
+          // Prioridade: executadoNaoPago tem precedência sobre executado
+          if (validatedData.executadoNaoPago === true) {
+            // Se executadoNaoPago = true, NÃO deve ter consulta
+            shouldHaveConsultation = false;
+          } else if (validatedData.executado === true) {
+            // Se executado = true e executadoNaoPago não é true, deve ter consulta
+            shouldHaveConsultation = true;
+          }
+          // Se ambos são false/undefined, não mudar (shouldHaveConsultation = null)
+        } else if (isMarkingConcluido && !isAlreadyConcluido) {
+          // Se está marcando como concluído pela primeira vez e não especificou, assumir que está pago
+          shouldHaveConsultation = true;
+        }
+
+        // Aplicar mudança se necessário
+        if (shouldHaveConsultation !== null) {
+          if (shouldHaveConsultation && !hasConsultation) {
+            // Criar Consultation para marcar como pago
+            await prisma.consultation.create({
+              data: {
+                appointmentId: id,
+                patientId: updatedAppointment.patientId,
+                procedureId: updatedAppointment.procedureId,
+                medicoId:
+                  updatedAppointment.medicoId ||
+                  existingAppointment.criadoPorId,
+                dataConsulta: updatedAppointment.dataHora,
+                status: 'CONCLUIDA',
+                unidade: userUnidade as any,
+                observacoes: updatedAppointment.observacoes,
+              },
+            });
+          } else if (
+            !shouldHaveConsultation &&
+            hasConsultation &&
+            existingAppointment.consulta
+          ) {
+            // Remover Consultation para marcar como não pago
+            await prisma.consultation.delete({
+              where: {
+                id: existingAppointment.consulta.id,
+              },
+            });
+          }
+        }
+      }
+
+      // Buscar appointment atualizado com consulta
+      const finalAppointment = await prisma.appointment.findUnique({
+        where: { id },
+        include: {
+          patient: {
+            select: {
+              id: true,
+              nome: true,
+              cpf: true,
+              telefone: true,
+            },
+          },
+          procedure: {
+            select: {
+              id: true,
+              nome: true,
+              valor: true,
+              duracao: true,
+              categoria: true,
+            },
+          },
+          medico: {
+            select: {
+              id: true,
+              nome: true,
+              especialidade: true,
+            },
+          },
+          consulta: {
+            select: {
+              id: true,
+              status: true,
+              dataConsulta: true,
+            },
+          },
+        },
+      });
+
+      const appointmentToReturn = finalAppointment || updatedAppointment;
+
+      // Formatar resposta com campos calculados para o frontend
+      const isConsulta =
+        appointmentToReturn.procedure?.categoria?.toLowerCase() === 'consulta';
+      let statusFrontend:
+        | 'executado'
+        | 'pendente'
+        | 'executado_nao_pago'
+        | string = appointmentToReturn.status;
+
+      if (appointmentToReturn.status === 'CONCLUIDO') {
+        statusFrontend = appointmentToReturn.consulta
+          ? 'executado'
+          : 'executado_nao_pago';
+      } else if (
+        appointmentToReturn.status === 'AGENDADO' ||
+        appointmentToReturn.status === 'CONFIRMADO'
+      ) {
+        statusFrontend = 'pendente';
+      }
 
       return res.json({
         success: true,
         message: 'Agendamento atualizado com sucesso',
-        data: updatedAppointment,
+        data: {
+          ...appointmentToReturn,
+          isConsulta,
+          tipo: isConsulta ? 'consulta' : 'procedimento',
+          statusFrontend,
+        },
       });
     } catch (error: unknown) {
       return ErrorHandler.handleError(
         error,
         res,
         'AppointmentController.update',
-        'Erro ao atualizar agendamento'
+        'Erro ao atualizar agendamento',
       );
     }
   }
@@ -614,7 +981,7 @@ export class AppointmentController {
         error,
         res,
         'AppointmentController.cancel',
-        'Erro ao cancelar agendamento'
+        'Erro ao cancelar agendamento',
       );
     }
   }
@@ -688,7 +1055,7 @@ export class AppointmentController {
         error,
         res,
         'AppointmentController.getToday',
-        'Erro ao buscar agendamentos do dia'
+        'Erro ao buscar agendamentos do dia',
       );
     }
   }
@@ -703,20 +1070,89 @@ export class AppointmentController {
         throw new AppError('ID do agendamento é obrigatório', 400);
       }
 
+      console.log(
+        `[Confirm Appointment] Tentando confirmar agendamento ${id} para unidade ${userUnidade}`,
+      );
+
+      // Verificar se o agendamento existe (primeiro sem filtrar por unidade para dar mensagem melhor)
+      const appointmentExists = await prisma.appointment.findUnique({
+        where: { id },
+        select: {
+          id: true,
+          unidade: true,
+          status: true,
+          patientId: true,
+          procedureId: true,
+          dataHora: true,
+        },
+      });
+
+      if (!appointmentExists) {
+        console.log(
+          `[Confirm Appointment] ❌ Agendamento ${id} não encontrado no banco de dados`,
+        );
+        throw new AppError('Agendamento não encontrado', 404);
+      }
+
+      console.log(`[Confirm Appointment] ✅ Agendamento encontrado:`, {
+        id: appointmentExists.id,
+        unidade: appointmentExists.unidade,
+        userUnidade: userUnidade,
+        status: appointmentExists.status,
+        dataHora: appointmentExists.dataHora,
+      });
+
+      // Verificar se o agendamento pertence à unidade do usuário
+      if (appointmentExists.unidade !== userUnidade) {
+        console.log(
+          `[Confirm Appointment] ⚠️ Unidade não corresponde: agendamento está em ${appointmentExists.unidade}, usuário está em ${userUnidade}`,
+        );
+        throw new AppError(
+          `Agendamento não encontrado na unidade ${userUnidade}. Este agendamento pertence à unidade ${appointmentExists.unidade}.`,
+          404,
+        );
+      }
+
+      // Buscar agendamento completo
       const existingAppointment = await prisma.appointment.findFirst({
         where: {
           id,
           unidade: userUnidade as any,
         },
+        include: {
+          patient: {
+            select: {
+              id: true,
+              nome: true,
+            },
+          },
+          procedure: {
+            select: {
+              id: true,
+              nome: true,
+              categoria: true,
+            },
+          },
+        },
       });
 
       if (!existingAppointment) {
+        console.log(
+          `[Confirm Appointment] ❌ Agendamento ${id} não encontrado após verificação de unidade`,
+        );
         throw new AppError('Agendamento não encontrado', 404);
       }
 
+      console.log(
+        `[Confirm Appointment] Status atual: ${existingAppointment.status}, Paciente: ${existingAppointment.patient.nome}, Procedimento: ${existingAppointment.procedure.nome}`,
+      );
+
       if (existingAppointment.status !== 'AGENDADO') {
+        console.log(
+          `[Confirm Appointment] ⚠️ Status inválido: ${existingAppointment.status} (esperado: AGENDADO)`,
+        );
         throw new AppError(
-          'Apenas agendamentos com status AGENDADO podem ser confirmados',
+          `Apenas agendamentos com status AGENDADO podem ser confirmados. Status atual: ${existingAppointment.status}`,
           400,
         );
       }
@@ -729,7 +1165,26 @@ export class AppointmentController {
           dataConfirmacao: new Date(),
           updatedAt: new Date(),
         },
+        include: {
+          patient: {
+            select: {
+              id: true,
+              nome: true,
+            },
+          },
+          procedure: {
+            select: {
+              id: true,
+              nome: true,
+              categoria: true,
+            },
+          },
+        },
       });
+
+      console.log(
+        `[Confirm Appointment] ✅ Agendamento ${id} confirmado com sucesso para ${confirmedAppointment.patient.nome}`,
+      );
 
       return res.json({
         success: true,
@@ -741,7 +1196,7 @@ export class AppointmentController {
         error,
         res,
         'AppointmentController.confirm',
-        'Erro ao confirmar agendamento'
+        'Erro ao confirmar agendamento',
       );
     }
   }
@@ -858,7 +1313,76 @@ export class AppointmentController {
         error,
         res,
         'AppointmentController.startConsultation',
-        'Erro ao iniciar consulta'
+        'Erro ao iniciar consulta',
+      );
+    }
+  }
+
+  // Excluir agendamento
+  async delete(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const { userUnidade } = req;
+
+      if (!id) {
+        throw new AppError('ID do agendamento é obrigatório', 400);
+      }
+
+      // Verificar se o agendamento existe
+      const appointmentExists = await prisma.appointment.findUnique({
+        where: { id },
+        include: {
+          consulta: {
+            select: {
+              id: true,
+            },
+          },
+        },
+      });
+
+      if (!appointmentExists) {
+        throw new AppError('Agendamento não encontrado', 404);
+      }
+
+      // Verificar se o agendamento pertence à unidade do usuário
+      if (appointmentExists.unidade !== userUnidade) {
+        throw new AppError(
+          `Agendamento não encontrado na unidade ${userUnidade}. Este agendamento pertence à unidade ${appointmentExists.unidade}.`,
+          404,
+        );
+      }
+
+      // Não permitir excluir agendamentos concluídos
+      if (appointmentExists.status === 'CONCLUIDO') {
+        throw new AppError(
+          'Não é possível excluir agendamento já concluído. Use cancelar antes de concluir.',
+          400,
+        );
+      }
+
+      // Não permitir excluir se tem consulta vinculada
+      if (appointmentExists.consulta) {
+        throw new AppError(
+          'Não é possível excluir agendamento que possui consulta vinculada.',
+          400,
+        );
+      }
+
+      // Deletar agendamento
+      await prisma.appointment.delete({
+        where: { id },
+      });
+
+      return res.json({
+        success: true,
+        message: 'Agendamento excluído com sucesso',
+      });
+    } catch (error: unknown) {
+      return ErrorHandler.handleError(
+        error,
+        res,
+        'AppointmentController.delete',
+        'Erro ao excluir agendamento',
       );
     }
   }

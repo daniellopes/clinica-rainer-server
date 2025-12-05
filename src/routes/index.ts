@@ -15,6 +15,7 @@ import repasseRoutes from './repasse.routes';
 import orcamentoRoutes from './orcamentoRoutes';
 import transferenciaRoutes from "./transferencia.routes";
 import pagamentosRoutes from './pagamentos.routes';
+import contasPagarRoutes from './contas-pagar.routes';
 
 const router = Router();
 
@@ -34,5 +35,6 @@ router.use('/repasses', repasseRoutes);
 router.use('/orcamentos', orcamentoRoutes);
 router.use("/transferencias", transferenciaRoutes);
 router.use('/pagamentos', pagamentosRoutes);
+router.use('/contas-pagar', contasPagarRoutes);
 
 export default router;

@@ -13,7 +13,9 @@
     "prisma:migrate": "prisma migrate dev",
     "create-admin": "ts-node src/scripts/createAdmin.ts",
     "setup-permissions": "tsx src/scripts/setupDefaultPermissions.ts",
-    "test:db": "ts-node src/scripts/testDatabaseConnection.ts"
+    "test:db": "ts-node src/scripts/testDatabaseConnection.ts",
+    "create-execucoes-data": "ts-node src/scripts/createExecucoesTestData.ts",
+    "update-procedure-values": "ts-node src/scripts/updateProcedureValues.ts"
   },
   "keywords": [],
   "author": "",

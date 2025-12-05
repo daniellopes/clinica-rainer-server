@@ -6,6 +6,7 @@ import { checkUnidadeMiddleware } from '../middlewares/checkUnidadeMiddleware';
 const router = Router();
 
 // Rotas de agendamentos
+// IMPORTANTE: Rotas específicas devem vir ANTES das rotas genéricas com :id
 router.get(
   '/',
   authMiddleware,
@@ -18,24 +19,13 @@ router.get(
   checkUnidadeMiddleware,
   appointmentController.getToday.bind(appointmentController),
 );
-router.get(
-  '/:id',
-  authMiddleware,
-  checkUnidadeMiddleware,
-  appointmentController.getById.bind(appointmentController),
-);
 router.post(
   '/',
   authMiddleware,
   checkUnidadeMiddleware,
   appointmentController.create.bind(appointmentController),
 );
-router.put(
-  '/:id',
-  authMiddleware,
-  checkUnidadeMiddleware,
-  appointmentController.update.bind(appointmentController),
-);
+// Rotas específicas (devem vir antes de /:id)
 router.patch(
   '/:id/confirm',
   authMiddleware,
@@ -53,6 +43,25 @@ router.post(
   authMiddleware,
   checkUnidadeMiddleware,
   appointmentController.startConsultation.bind(appointmentController),
+);
+// Rotas genéricas (devem vir depois das rotas específicas)
+router.get(
+  '/:id',
+  authMiddleware,
+  checkUnidadeMiddleware,
+  appointmentController.getById.bind(appointmentController),
+);
+router.put(
+  '/:id',
+  authMiddleware,
+  checkUnidadeMiddleware,
+  appointmentController.update.bind(appointmentController),
+);
+router.delete(
+  '/:id',
+  authMiddleware,
+  checkUnidadeMiddleware,
+  appointmentController.delete.bind(appointmentController),
 );
 
 export default router;
