@@ -1,0 +1,33 @@
+[33mcommit f60ee2287fed4db22cc57a635b7961922f51845b[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m
+Author: Hudson Abreu <hudson.abreu@thehive.com.br>
+Date:   Fri Dec 5 01:26:49 2025 -0300
+
+    feat: implementa métodos CRUD completos para agendamentos e adiciona documentação
+    
+    - Adiciona método delete() para excluir agendamentos
+    - Melhora método confirm() com logs de diagnóstico
+    - Corrige método cancel() para aceitar motivoCancelamento
+    - Adiciona campo categoria ao select do procedimento em update()
+    - Cria script checkAppointment.ts para diagnóstico
+    - Adiciona documentação de verificação de processos
+    - Cria rotas e controllers para contas a pagar
+    - Adiciona regras de consulta vs procedimento
+
+ docs/FIX_CONTAS_PAGAR_ROUTE.md                     | 109 [32m++++[m
+ docs/REGRA_CONSULTA_PROCEDIMENTO.md                | 160 [32m+++++[m
+ docs/VERIFICACAO_COMPLETA_AGENDAMENTOS.md          | 172 [32m++++++[m
+ docs/VERIFICACAO_PROCESSOS_AGENDAMENTO.md          |  82 [32m+++[m
+ package.json                                       |   4 [32m+[m[31m-[m
+ .../20251204213436_add_contas_pagar/migration.sql  |  30 [32m+[m
+ prisma/schema.prisma                               |  24 [32m+[m
+ src/controllers/AppointmentController.ts           | 646 [32m+++++++++++++++++++[m[31m--[m
+ src/controllers/ContaPagarController.ts            | 200 [32m+++++++[m
+ src/middlewares/notFoundHandler.ts                 |  17 [32m+[m[31m-[m
+ src/routes/appointment.routes.ts                   |  33 [32m+[m[31m-[m
+ src/routes/contas-pagar.routes.ts                  |  51 [32m++[m
+ src/routes/index.ts                                |   2 [32m+[m
+ src/schemas/contas-pagar.schema.ts                 |  17 [32m+[m
+ src/scripts/checkAppointment.ts                    | 187 [32m++++++[m
+ src/scripts/createExecucoesTestData.ts             | 478 [32m+++++++++++++++[m
+ src/scripts/updateProcedureValues.ts               | 186 [32m++++++[m
+ 17 files changed, 2323 insertions(+), 75 deletions(-)

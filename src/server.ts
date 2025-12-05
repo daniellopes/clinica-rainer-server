@@ -22,6 +22,8 @@ const allowedOrigins = [
   'http://127.0.0.1:3000',
   process.env.FRONTEND_URL,
   'https://clinica-rainer-frontend.vercel.app',
+  process.env.RENDER_EXTERNAL_URL,
+  process.env.RENDER_URL,
 ].filter(Boolean) as string[];
 
 const corsOptions = {
@@ -91,13 +93,29 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 // Healthcheck
-app.get('/health', (req, res) => {
-  res.status(200).json({
-    status: 'OK',
-    timestamp: new Date().toISOString(),
-    service: 'esthetic-pro-api',
-    version: '1.0.0',
-  });
+app.get('/health', async (req, res) => {
+  try {
+    const { PrismaClient } = await import('@prisma/client');
+    const prisma = new PrismaClient();
+    await prisma.$queryRaw`SELECT 1`;
+    await prisma.$disconnect();
+    
+    res.status(200).json({
+      status: 'OK',
+      timestamp: new Date().toISOString(),
+      service: 'esthetic-pro-api',
+      version: '1.0.0',
+      database: 'connected',
+    });
+  } catch (error) {
+    res.status(503).json({
+      status: 'ERROR',
+      timestamp: new Date().toISOString(),
+      service: 'esthetic-pro-api',
+      database: 'disconnected',
+      error: process.env.NODE_ENV === 'development' ? String(error) : undefined,
+    });
+  }
 });
 
 // Rotas
